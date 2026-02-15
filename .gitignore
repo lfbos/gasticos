@@ -1,0 +1,56 @@
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock
+*.pdb
+
+# Node
+node_modules/
+dist/
+.cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+*.lcov
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Database
+*.sqlite
+*.sqlite3
+
+# MinIO data
+minio_data/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# SQLx offline mode
+.sqlx/
