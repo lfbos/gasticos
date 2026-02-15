@@ -54,3 +54,11 @@ temp/
 
 # SQLx offline mode
 .sqlx/
+
+# Internal docs
+docs/
+
+# Claude files
+.claude
+.claude_cache/
+CLAUDE.md
