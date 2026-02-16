@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: Gastico API
+  description: Colombian bank statement analyzer API
+  version: 0.1.0
+  contact:
+    name: Gastico Team
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: gastico-api
+
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: INVALID_FILE
+            message:
+              type: string
+              example: The uploaded file is not supported
+
+    PaginationMeta:
+      type: object
+      required:
+        - total
+        - page
+        - per_page
+        - total_pages
+      properties:
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+          format: int32
+        per_page:
+          type: integer
+          format: int32
+        total_pages:
+          type: integer
+          format: int32
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
