@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.85-slim-bookworm AS builder
+FROM rust:slim-bookworm AS builder
 
 WORKDIR /app
 
@@ -49,7 +49,7 @@ COPY --from=builder /app/target/release/worker /usr/local/bin/worker
 CMD ["worker"]
 
 # Development stage (for docker-compose dev)
-FROM rust:1.85-slim-bookworm AS dev
+FROM rust:slim-bookworm AS dev
 
 WORKDIR /app
 
