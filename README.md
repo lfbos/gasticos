@@ -32,7 +32,7 @@ Colombian bank statement analyzer. Upload your bank statements and get insights 
 ### Prerequisites
 
 - Docker & Docker Compose
-- Rust 1.83+ (for local development)
+- Rust 1.85+ (for local development)
 - Node.js 20+ (for local development)
 
 ### Development with Docker
