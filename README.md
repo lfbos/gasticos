@@ -8,12 +8,24 @@ Colombian bank statement analyzer. Upload your bank statements and get insights 
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS + Recharts
 - **Auth**: JWT + Refresh Tokens (argon2 hashing)
 
-## Supported Banks
+## Planned Bank Support
 
+### Traditional Banks
 - Bancolombia
-- Nequi
-- Nu Colombia
 - Davivienda
+- Banco de Bogotá
+- BBVA Colombia
+- Banco de Occidente
+- Scotiabank Colpatria
+- Itaú Colombia
+
+### Digital Banks / Neobanks
+- Nequi
+- Daviplata
+- Nu Colombia
+- Lulo Bank
+- MOVii
+- RappiPay
 
 ## Getting Started
 
