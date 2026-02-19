@@ -96,7 +96,3 @@ gastico/
 └── shared/
     └── api-spec/          # OpenAPI spec
 ```
-
-## License
-
-MIT
