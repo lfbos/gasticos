@@ -4,10 +4,27 @@ use diesel_async::RunQueryDsl;
 use shared::{auth::JwtConfig, db::create_pool, DbPool};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
+use utoipa_swagger_ui::{Config, SwaggerUi};
 
 mod extractors;
 mod middleware;
 mod routes;
+
+const OPENAPI_SPEC: &str = include_str!("../../../../shared/api-spec/openapi.yml");
+
+#[get("/api-docs/openapi.yml")]
+async fn openapi_spec() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("text/yaml")
+        .body(OPENAPI_SPEC)
+}
+
+#[get("/docs")]
+async fn docs_redirect() -> impl Responder {
+    HttpResponse::Found()
+        .insert_header(("Location", "/swagger-ui/index.html"))
+        .finish()
+}
 
 #[get("/health")]
 async fn health(pool: web::Data<DbPool>) -> impl Responder {
@@ -75,6 +92,12 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(jwt_config.clone()))
             .service(health)
             .service(index)
+            .service(openapi_spec)
+            .service(docs_redirect)
+            .service(
+                SwaggerUi::new("/swagger-ui/{_:.*}")
+                    .config(Config::new(["/api-docs/openapi.yml"])),
+            )
             .service(
                 web::scope("/api/v1")
                     .configure(routes::auth_routes),
