@@ -52,8 +52,8 @@ tmp/
 temp/
 *.tmp
 
-# SQLx offline mode
-.sqlx/
+# Diesel
+.diesel_schema_patch/
 
 # Internal docs
 docs/

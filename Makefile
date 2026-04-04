@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend test test-backend test-frontend test-parsers lint fmt build migrate migrate-create db-reset clean
+.PHONY: dev dev-backend dev-frontend test test-backend test-frontend test-parsers lint fmt build migrate migrate-create db-reset db-setup clean
 
 # Development
 dev:
@@ -10,15 +10,18 @@ dev-backend:
 dev-frontend:
 	cd frontend && npm run dev
 
-# Database
+# Database (Diesel)
 migrate:
-	cd backend && sqlx migrate run
+	cd backend && diesel migration run
 
 migrate-create:
-	cd backend && sqlx migrate add $(NAME)
+	cd backend && diesel migration generate $(NAME)
 
 db-reset:
-	cd backend && sqlx database drop -y && sqlx database create && sqlx migrate run
+	cd backend && diesel database reset
+
+db-setup:
+	cd backend && diesel setup
 
 # Testing
 test: test-backend test-frontend

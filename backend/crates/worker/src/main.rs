@@ -1,3 +1,4 @@
+use shared::db::create_pool;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -11,8 +12,13 @@ async fn main() -> anyhow::Result<()> {
 
     info!("Starting Gastico worker");
 
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let redis_url =
         std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+
+    info!("Connecting to database...");
+    let _pool = create_pool(&database_url);
+    info!("Database pool created");
 
     info!("Connecting to Redis at {}", redis_url);
 
