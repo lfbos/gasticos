@@ -1,0 +1,113 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "all": "Todos",
+    "none": "Ninguno",
+    "yes": "Sí",
+    "no": "No",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "close": "Cerrar"
+  },
+  "categories": {
+    "housing": "Vivienda",
+    "groceries": "Mercado",
+    "restaurants": "Restaurantes",
+    "transportation": "Transporte",
+    "health": "Salud",
+    "education": "Educación",
+    "entertainment": "Entretenimiento",
+    "clothing": "Ropa",
+    "financial": "Financiero",
+    "technology": "Tecnología",
+    "subscriptions": "Suscripciones",
+    "other": "Otros"
+  },
+  "transactions": {
+    "title": "Transacciones",
+    "income": "Ingreso",
+    "expense": "Gasto",
+    "date": "Fecha",
+    "description": "Descripción",
+    "amount": "Monto",
+    "balance": "Saldo",
+    "category": "Categoría",
+    "uncategorized": "Sin categoría",
+    "noTransactions": "No hay transacciones"
+  },
+  "statements": {
+    "title": "Extractos",
+    "upload": "Subir extracto",
+    "bank": "Banco",
+    "filename": "Archivo",
+    "status": {
+      "pending": "Pendiente",
+      "processing": "Procesando",
+      "completed": "Completado",
+      "failed": "Fallido"
+    },
+    "uploadSuccess": "Extracto subido exitosamente",
+    "uploadError": "Error al subir el extracto"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "totalIncome": "Ingresos totales",
+    "totalExpenses": "Gastos totales",
+    "balance": "Balance",
+    "recentTransactions": "Transacciones recientes",
+    "spendingByCategory": "Gastos por categoría",
+    "monthlyTrend": "Tendencia mensual"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "register": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "name": "Nombre",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes cuenta?",
+    "hasAccount": "¿Ya tienes cuenta?"
+  },
+  "banks": {
+    "bancolombia": "Bancolombia",
+    "davivienda": "Davivienda",
+    "banco_de_bogota": "Banco de Bogotá",
+    "bbva_colombia": "BBVA Colombia",
+    "banco_de_occidente": "Banco de Occidente",
+    "scotiabank_colpatria": "Scotiabank Colpatria",
+    "itau_colombia": "Itaú Colombia",
+    "nequi": "Nequi",
+    "daviplata": "Daviplata",
+    "nu_colombia": "Nu Colombia",
+    "lulo_bank": "Lulo Bank",
+    "movii": "MOVii",
+    "rappipay": "RappiPay"
+  },
+  "errors": {
+    "required": "Este campo es requerido",
+    "invalidEmail": "Correo electrónico inválido",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "networkError": "Error de conexión. Intenta de nuevo.",
+    "unauthorized": "Sesión expirada. Inicia sesión de nuevo.",
+    "notFound": "Recurso no encontrado",
+    "serverError": "Error del servidor. Intenta más tarde."
+  },
+  "format": {
+    "currency": "{{value, currency}}",
+    "date": "{{value, date}}",
+    "dateShort": "{{value, dateShort}}"
+  }
+}
