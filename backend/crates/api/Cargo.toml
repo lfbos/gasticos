@@ -6,6 +6,8 @@ edition.workspace = true
 [dependencies]
 actix-cors = "0.7.1"
 actix-web = "4.13.0"
+actix-web-httpauth = "0.8.2"
+chrono = "0.4.44"
 diesel = { version = "2.2", features = ["postgres"] }
 diesel-async = { version = "0.5", features = ["postgres", "deadpool"] }
 dotenvy = "0.15.7"
@@ -15,3 +17,4 @@ shared = { version = "0.1.0", path = "../shared" }
 tokio = { version = "1.49.0", features = ["full"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+uuid = "1.23.0"

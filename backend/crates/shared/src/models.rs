@@ -7,7 +7,7 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::schema::{categories, statements, transactions, users};
+use crate::schema::{categories, refresh_tokens, statements, transactions, users};
 
 // ============================================================================
 // User
@@ -146,6 +146,85 @@ pub struct NewTransaction {
     pub balance: Option<bigdecimal::BigDecimal>,
     pub reference: Option<String>,
     pub is_income: bool,
+}
+
+// ============================================================================
+// Refresh Token
+// ============================================================================
+
+/// Refresh token model for reading from database
+#[derive(Debug, Clone, Queryable, Selectable, Identifiable)]
+#[diesel(table_name = refresh_tokens)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct RefreshToken {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub revoked_at: Option<DateTime<Utc>>,
+}
+
+/// New refresh token for inserting into database
+#[derive(Debug, Insertable)]
+#[diesel(table_name = refresh_tokens)]
+pub struct NewRefreshToken {
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub expires_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// Auth DTOs (Request/Response for Authentication)
+// ============================================================================
+
+/// Request body for user registration
+#[derive(Debug, Clone, Deserialize)]
+pub struct RegisterRequest {
+    pub email: String,
+    pub password: String,
+    pub name: String,
+}
+
+/// Request body for user login
+#[derive(Debug, Clone, Deserialize)]
+pub struct LoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+/// Request body for token refresh
+#[derive(Debug, Clone, Deserialize)]
+pub struct RefreshRequest {
+    pub refresh_token: String,
+}
+
+/// Response containing authentication tokens
+#[derive(Debug, Clone, Serialize)]
+pub struct AuthResponse {
+    pub access_token: String,
+    pub refresh_token: String,
+    pub user: UserResponse,
+}
+
+/// User information for API responses (excludes sensitive data)
+#[derive(Debug, Clone, Serialize)]
+pub struct UserResponse {
+    pub id: Uuid,
+    pub email: String,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+}
+
+impl From<User> for UserResponse {
+    fn from(user: User) -> Self {
+        Self {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            created_at: user.created_at,
+        }
+    }
 }
 
 // ============================================================================

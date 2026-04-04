@@ -24,6 +24,21 @@ pub enum AppError {
 
     /// Internal server error
     Internal(String),
+
+    /// Invalid email or password
+    InvalidCredentials,
+
+    /// JWT token has expired
+    TokenExpired,
+
+    /// JWT token is invalid or malformed
+    TokenInvalid,
+
+    /// Email already registered
+    EmailAlreadyExists,
+
+    /// Password doesn't meet strength requirements
+    PasswordTooWeak(String),
 }
 
 #[derive(Serialize)]
@@ -46,6 +61,11 @@ impl fmt::Display for AppError {
             AppError::Forbidden => write!(f, "Forbidden"),
             AppError::Database(msg) => write!(f, "Database error: {}", msg),
             AppError::Internal(msg) => write!(f, "Internal error: {}", msg),
+            AppError::InvalidCredentials => write!(f, "Invalid credentials"),
+            AppError::TokenExpired => write!(f, "Token expired"),
+            AppError::TokenInvalid => write!(f, "Invalid token"),
+            AppError::EmailAlreadyExists => write!(f, "Email already registered"),
+            AppError::PasswordTooWeak(msg) => write!(f, "Password too weak: {}", msg),
         }
     }
 }
@@ -59,6 +79,11 @@ impl ResponseError for AppError {
             AppError::Forbidden => StatusCode::FORBIDDEN,
             AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::InvalidCredentials => StatusCode::UNAUTHORIZED,
+            AppError::TokenExpired => StatusCode::UNAUTHORIZED,
+            AppError::TokenInvalid => StatusCode::UNAUTHORIZED,
+            AppError::EmailAlreadyExists => StatusCode::CONFLICT,
+            AppError::PasswordTooWeak(_) => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -70,6 +95,15 @@ impl ResponseError for AppError {
             AppError::Forbidden => ("FORBIDDEN", "Insufficient permissions".to_string()),
             AppError::Database(_) => ("DATABASE_ERROR", "A database error occurred".to_string()),
             AppError::Internal(_) => ("INTERNAL_ERROR", "An internal error occurred".to_string()),
+            AppError::InvalidCredentials => {
+                ("INVALID_CREDENTIALS", "Invalid email or password".to_string())
+            }
+            AppError::TokenExpired => ("TOKEN_EXPIRED", "Token has expired".to_string()),
+            AppError::TokenInvalid => ("TOKEN_INVALID", "Invalid or malformed token".to_string()),
+            AppError::EmailAlreadyExists => {
+                ("EMAIL_EXISTS", "Email is already registered".to_string())
+            }
+            AppError::PasswordTooWeak(msg) => ("PASSWORD_WEAK", msg.clone()),
         };
 
         HttpResponse::build(self.status_code()).json(ErrorBody {

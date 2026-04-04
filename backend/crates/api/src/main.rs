@@ -1,9 +1,13 @@
 use actix_cors::Cors;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use diesel_async::RunQueryDsl;
-use shared::{db::create_pool, DbPool};
+use shared::{auth::JwtConfig, db::create_pool, DbPool};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
+
+mod extractors;
+mod middleware;
+mod routes;
 
 #[get("/health")]
 async fn health(pool: web::Data<DbPool>) -> impl Responder {
@@ -52,6 +56,10 @@ async fn main() -> std::io::Result<()> {
     let pool = create_pool(&database_url);
     info!("Database pool created");
 
+    info!("Loading JWT configuration...");
+    let jwt_config = JwtConfig::from_env().expect("Failed to load JWT configuration");
+    info!("JWT configuration loaded");
+
     info!("Starting Gastico API server at {}:{}", host, port);
 
     HttpServer::new(move || {
@@ -64,9 +72,13 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(jwt_config.clone()))
             .service(health)
             .service(index)
-            .service(web::scope("/api/v1"))
+            .service(
+                web::scope("/api/v1")
+                    .configure(routes::auth_routes),
+            )
     })
     .bind((host, port))?
     .run()
