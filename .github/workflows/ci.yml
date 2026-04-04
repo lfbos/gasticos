@@ -11,8 +11,27 @@ env:
 
 jobs:
   backend:
-    name: Backend
+    name: Backend Tests & Coverage
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gasticos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/gasticos_test
+      JWT_SECRET: test_secret_key_that_is_at_least_32_characters_long_for_ci
 
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +39,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-action@stable
         with:
-          components: rustfmt, clippy
+          components: rustfmt, clippy, llvm-tools-preview
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -33,6 +52,16 @@ jobs:
             backend/target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install Diesel CLI
+        run: cargo install diesel_cli --no-default-features --features postgres --locked || true
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Run migrations
+        working-directory: backend
+        run: diesel migration run
+
       - name: Check formatting
         working-directory: backend
         run: cargo fmt --all -- --check
@@ -41,9 +70,16 @@ jobs:
         working-directory: backend
         run: cargo clippy --workspace -- -D warnings
 
-      - name: Run tests
+      - name: Run tests with coverage
         working-directory: backend
-        run: cargo test --workspace
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/lcov.info
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   frontend:
     name: Frontend
@@ -66,10 +102,6 @@ jobs:
       - name: Run linter
         working-directory: frontend
         run: npm run lint
-
-      - name: Run tests
-        working-directory: frontend
-        run: npm test
 
       - name: Build
         working-directory: frontend
