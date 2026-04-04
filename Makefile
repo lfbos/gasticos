@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend test test-backend test-frontend test-parsers lint fmt build migrate migrate-create db-reset db-setup clean
+.PHONY: dev dev-backend dev-frontend test test-backend test-frontend test-parsers lint fmt build migrate migrate-create db-reset db-setup clean coverage coverage-html coverage-lcov
 
 # Development
 dev:
@@ -34,6 +34,16 @@ test-frontend:
 
 test-parsers:
 	cd backend && cargo test -p parser
+
+# Coverage
+coverage:
+	cd backend && cargo llvm-cov --workspace
+
+coverage-html:
+	cd backend && cargo llvm-cov --workspace --html --open
+
+coverage-lcov:
+	cd backend && cargo llvm-cov --workspace --lcov --output-path coverage.lcov
 
 # Linting
 lint:

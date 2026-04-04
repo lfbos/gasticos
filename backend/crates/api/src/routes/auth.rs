@@ -1,6 +1,6 @@
 //! Authentication routes.
 
-use actix_web::{post, get, web, HttpResponse};
+use actix_web::{get, post, web, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
@@ -226,10 +226,7 @@ async fn refresh(
 
 /// Logout (revoke refresh token)
 #[post("/auth/logout")]
-async fn logout(
-    pool: web::Data<DbPool>,
-    auth_user: AuthUser,
-) -> Result<HttpResponse, AppError> {
+async fn logout(pool: web::Data<DbPool>, auth_user: AuthUser) -> Result<HttpResponse, AppError> {
     let mut conn = pool.get().await?;
 
     // Revoke all refresh tokens for this user
@@ -250,10 +247,7 @@ async fn logout(
 
 /// Get current user info
 #[get("/auth/me")]
-async fn me(
-    pool: web::Data<DbPool>,
-    auth_user: AuthUser,
-) -> Result<HttpResponse, AppError> {
+async fn me(pool: web::Data<DbPool>, auth_user: AuthUser) -> Result<HttpResponse, AppError> {
     let mut conn = pool.get().await?;
 
     let user: User = users::table

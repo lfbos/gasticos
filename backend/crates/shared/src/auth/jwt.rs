@@ -63,6 +63,8 @@ pub struct Claims {
     pub iat: i64,
     /// Token type (access or refresh)
     pub token_type: TokenType,
+    /// JWT ID (unique identifier for this token)
+    pub jti: String,
 }
 
 impl Claims {
@@ -76,6 +78,7 @@ impl Claims {
             exp,
             iat: now,
             token_type: TokenType::Access,
+            jti: Uuid::new_v4().to_string(),
         }
     }
 
@@ -89,6 +92,7 @@ impl Claims {
             exp,
             iat: now,
             token_type: TokenType::Refresh,
+            jti: Uuid::new_v4().to_string(),
         }
     }
 }
@@ -166,11 +170,12 @@ pub fn generate_random_token() -> String {
 }
 
 /// Hash a token for secure storage in the database.
+/// Uses SHA256 for deterministic and secure hashing.
 pub fn hash_token(token: &str) -> String {
-    use std::hash::{DefaultHasher, Hash, Hasher};
-    let mut hasher = DefaultHasher::new();
-    token.hash(&mut hasher);
-    format!("{:x}", hasher.finish())
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(token.as_bytes());
+    hex::encode(hasher.finalize())
 }
 
 #[cfg(test)]

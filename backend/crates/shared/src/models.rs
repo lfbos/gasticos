@@ -200,7 +200,7 @@ pub struct RefreshRequest {
 }
 
 /// Response containing authentication tokens
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthResponse {
     pub access_token: String,
     pub refresh_token: String,
@@ -208,7 +208,7 @@ pub struct AuthResponse {
 }
 
 /// User information for API responses (excludes sensitive data)
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserResponse {
     pub id: Uuid,
     pub email: String,

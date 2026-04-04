@@ -95,9 +95,10 @@ impl ResponseError for AppError {
             AppError::Forbidden => ("FORBIDDEN", "Insufficient permissions".to_string()),
             AppError::Database(_) => ("DATABASE_ERROR", "A database error occurred".to_string()),
             AppError::Internal(_) => ("INTERNAL_ERROR", "An internal error occurred".to_string()),
-            AppError::InvalidCredentials => {
-                ("INVALID_CREDENTIALS", "Invalid email or password".to_string())
-            }
+            AppError::InvalidCredentials => (
+                "INVALID_CREDENTIALS",
+                "Invalid email or password".to_string(),
+            ),
             AppError::TokenExpired => ("TOKEN_EXPIRED", "Token has expired".to_string()),
             AppError::TokenInvalid => ("TOKEN_INVALID", "Invalid or malformed token".to_string()),
             AppError::EmailAlreadyExists => {
@@ -118,9 +119,7 @@ impl ResponseError for AppError {
 impl From<diesel::result::Error> for AppError {
     fn from(err: diesel::result::Error) -> Self {
         match err {
-            diesel::result::Error::NotFound => {
-                AppError::NotFound("Resource not found".to_string())
-            }
+            diesel::result::Error::NotFound => AppError::NotFound("Resource not found".to_string()),
             _ => AppError::Database(err.to_string()),
         }
     }

@@ -30,12 +30,10 @@ async fn docs_redirect() -> impl Responder {
 async fn health(pool: web::Data<DbPool>) -> impl Responder {
     // Check database connectivity
     let db_status = match pool.get().await {
-        Ok(mut conn) => {
-            match diesel::sql_query("SELECT 1").execute(&mut conn).await {
-                Ok(_) => "connected",
-                Err(_) => "error",
-            }
-        }
+        Ok(mut conn) => match diesel::sql_query("SELECT 1").execute(&mut conn).await {
+            Ok(_) => "connected",
+            Err(_) => "error",
+        },
         Err(_) => "disconnected",
     };
 
@@ -95,13 +93,9 @@ async fn main() -> std::io::Result<()> {
             .service(openapi_spec)
             .service(docs_redirect)
             .service(
-                SwaggerUi::new("/swagger-ui/{_:.*}")
-                    .config(Config::new(["/api-docs/openapi.yml"])),
+                SwaggerUi::new("/swagger-ui/{_:.*}").config(Config::new(["/api-docs/openapi.yml"])),
             )
-            .service(
-                web::scope("/api/v1")
-                    .configure(routes::auth_routes),
-            )
+            .service(web::scope("/api/v1").configure(routes::auth_routes))
     })
     .bind((host, port))?
     .run()
