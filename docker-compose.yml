@@ -49,8 +49,8 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       target: dev
     container_name: gastico-backend
     environment:
@@ -73,13 +73,14 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      - ./shared:/app/shared
       - cargo_cache:/usr/local/cargo/registry
       - target_cache:/app/target
 
   worker:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
       target: worker
     container_name: gastico-worker
     environment:
@@ -99,6 +100,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      - ./shared:/app/shared
       - cargo_cache:/usr/local/cargo/registry
       - target_cache:/app/target
 

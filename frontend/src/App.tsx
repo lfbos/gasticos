@@ -1,27 +1,38 @@
+/**
+ * Main application component with routing.
+ */
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { RegisterPage } from '@/pages/auth/RegisterPage';
+import { DashboardPage } from '@/pages/DashboardPage';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Gasticos
-          </h1>
-        </div>
-      </header>
-      <main>
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="text-xl font-semibold text-gray-800">
-              Analiza tus extractos bancarios
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Sube tus extractos de Bancolombia, Nequi, Nu Colombia o Davivienda
-              y obtén insights sobre tus gastos.
-            </p>
-          </div>
-        </div>
-      </main>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Default redirect */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        {/* 404 fallback */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
