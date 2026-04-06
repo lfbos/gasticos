@@ -1,0 +1,2 @@
+-- Extensions are not dropped as they may be used by other schemas/tables
+-- DROP EXTENSION IF EXISTS pgcrypto;

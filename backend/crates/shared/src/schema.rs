@@ -24,6 +24,18 @@ diesel::table! {
 }
 
 diesel::table! {
+    refresh_tokens (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        #[max_length = 255]
+        token_hash -> Varchar,
+        expires_at -> Timestamptz,
+        created_at -> Timestamptz,
+        revoked_at -> Nullable<Timestamptz>,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::StatementStatus;
 
@@ -168,6 +180,7 @@ diesel::table! {
 }
 
 diesel::joinable!(categories -> users (user_id));
+diesel::joinable!(refresh_tokens -> users (user_id));
 diesel::joinable!(statements -> users (user_id));
 diesel::joinable!(transactions -> categories (category_id));
 diesel::joinable!(transactions -> statements (statement_id));
@@ -190,6 +203,7 @@ diesel::joinable!(transactions_2027 -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     categories,
+    refresh_tokens,
     statements,
     transactions,
     transactions_2023,

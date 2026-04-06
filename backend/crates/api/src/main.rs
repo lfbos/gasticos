@@ -1,20 +1,39 @@
 use actix_cors::Cors;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use diesel_async::RunQueryDsl;
-use shared::{db::create_pool, DbPool};
+use shared::{auth::JwtConfig, db::create_pool, DbPool};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
+use utoipa_swagger_ui::{Config, SwaggerUi};
+
+mod extractors;
+mod middleware;
+mod routes;
+
+const OPENAPI_SPEC: &str = include_str!("../../../../shared/api-spec/openapi.yml");
+
+#[get("/api-docs/openapi.yml")]
+async fn openapi_spec() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("text/yaml")
+        .body(OPENAPI_SPEC)
+}
+
+#[get("/docs")]
+async fn docs_redirect() -> impl Responder {
+    HttpResponse::Found()
+        .insert_header(("Location", "/swagger-ui/index.html"))
+        .finish()
+}
 
 #[get("/health")]
 async fn health(pool: web::Data<DbPool>) -> impl Responder {
     // Check database connectivity
     let db_status = match pool.get().await {
-        Ok(mut conn) => {
-            match diesel::sql_query("SELECT 1").execute(&mut conn).await {
-                Ok(_) => "connected",
-                Err(_) => "error",
-            }
-        }
+        Ok(mut conn) => match diesel::sql_query("SELECT 1").execute(&mut conn).await {
+            Ok(_) => "connected",
+            Err(_) => "error",
+        },
         Err(_) => "disconnected",
     };
 
@@ -28,7 +47,7 @@ async fn health(pool: web::Data<DbPool>) -> impl Responder {
 #[get("/")]
 async fn index() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
-        "name": "Gastico API",
+        "name": "Gasticos API",
         "version": env!("CARGO_PKG_VERSION")
     }))
 }
@@ -52,7 +71,11 @@ async fn main() -> std::io::Result<()> {
     let pool = create_pool(&database_url);
     info!("Database pool created");
 
-    info!("Starting Gastico API server at {}:{}", host, port);
+    info!("Loading JWT configuration...");
+    let jwt_config = JwtConfig::from_env().expect("Failed to load JWT configuration");
+    info!("JWT configuration loaded");
+
+    info!("Starting Gasticos API server at {}:{}", host, port);
 
     HttpServer::new(move || {
         let cors = Cors::default()
@@ -64,9 +87,15 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(jwt_config.clone()))
             .service(health)
             .service(index)
-            .service(web::scope("/api/v1"))
+            .service(openapi_spec)
+            .service(docs_redirect)
+            .service(
+                SwaggerUi::new("/swagger-ui/{_:.*}").config(Config::new(["/api-docs/openapi.yml"])),
+            )
+            .service(web::scope("/api/v1").configure(routes::auth_routes))
     })
     .bind((host, port))?
     .run()
