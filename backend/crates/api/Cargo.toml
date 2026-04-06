@@ -7,7 +7,6 @@ edition.workspace = true
 actix-cors = "0.7.1"
 actix-http = "3.12.0"
 actix-web = "4.13.0"
-actix-web-httpauth = "0.8.2"
 chrono = "0.4.44"
 diesel = { version = "2.2", features = ["postgres"] }
 diesel-async = { version = "0.5", features = ["postgres", "deadpool"] }
