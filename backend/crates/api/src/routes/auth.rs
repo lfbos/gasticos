@@ -188,7 +188,10 @@ async fn refresh(
         .find(claims.sub)
         .first(&mut conn)
         .await
-        .map_err(|_| AppError::TokenInvalid)?;
+        .map_err(|e| match e {
+            diesel::result::Error::NotFound => AppError::TokenInvalid,
+            _ => AppError::Database(e.to_string()),
+        })?;
 
     // Revoke old refresh token
     diesel::update(refresh_tokens::table.filter(refresh_tokens::token_hash.eq(&token_hash)))
@@ -254,7 +257,10 @@ async fn me(pool: web::Data<DbPool>, auth_user: AuthUser) -> Result<HttpResponse
         .find(auth_user.user_id)
         .first(&mut conn)
         .await
-        .map_err(|_| AppError::NotFound("User not found".to_string()))?;
+        .map_err(|e| match e {
+            diesel::result::Error::NotFound => AppError::NotFound("User not found".to_string()),
+            _ => AppError::Database(e.to_string()),
+        })?;
 
     Ok(HttpResponse::Ok().json(UserResponse::from(user)))
 }
