@@ -12,9 +12,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy workspace files (context is project root)
+# Path ../../../../shared from crates/api/src/ resolves to /shared
 COPY backend/Cargo.toml ./
 COPY backend/crates ./crates
-COPY shared ./shared
+COPY shared /shared
 
 # Build release binaries
 RUN cargo build --release
