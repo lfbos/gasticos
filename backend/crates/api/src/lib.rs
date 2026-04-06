@@ -1,4 +1,4 @@
-//! Gastico API library.
+//! Gasticos API library.
 //!
 //! This module exposes the API components for use in integration tests.
 

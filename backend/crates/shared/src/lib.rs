@@ -1,4 +1,4 @@
-//! Shared models, DTOs, and utilities for Gastico.
+//! Shared models, DTOs, and utilities for Gasticos.
 
 pub mod auth;
 pub mod db;

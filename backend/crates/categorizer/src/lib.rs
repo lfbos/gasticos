@@ -1,4 +1,4 @@
-//! Transaction categorization engine for Gastico.
+//! Transaction categorization engine for Gasticos.
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

@@ -10,7 +10,7 @@ async fn main() -> anyhow::Result<()> {
         .with_env_filter(EnvFilter::from_default_env())
         .init();
 
-    info!("Starting Gastico worker");
+    info!("Starting Gasticos worker");
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let redis_url =

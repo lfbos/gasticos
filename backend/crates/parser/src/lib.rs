@@ -1,4 +1,4 @@
-//! Bank statement parsing engine for Gastico.
+//! Bank statement parsing engine for Gasticos.
 //!
 //! This crate provides parsing logic for Colombian bank statement formats.
 

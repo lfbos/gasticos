@@ -47,7 +47,7 @@ async fn health(pool: web::Data<DbPool>) -> impl Responder {
 #[get("/")]
 async fn index() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({
-        "name": "Gastico API",
+        "name": "Gasticos API",
         "version": env!("CARGO_PKG_VERSION")
     }))
 }
@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
     let jwt_config = JwtConfig::from_env().expect("Failed to load JWT configuration");
     info!("JWT configuration loaded");
 
-    info!("Starting Gastico API server at {}:{}", host, port);
+    info!("Starting Gasticos API server at {}:{}", host, port);
 
     HttpServer::new(move || {
         let cors = Cors::default()

@@ -1,4 +1,4 @@
-# Gastico
+# Gasticos
 
 Colombian bank statement analyzer. Upload your bank statements and get insights into your spending patterns.
 
