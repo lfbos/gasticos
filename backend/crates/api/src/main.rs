@@ -10,7 +10,7 @@ mod extractors;
 mod middleware;
 mod routes;
 
-const OPENAPI_SPEC: &str = include_str!("../../../../shared/api-spec/openapi.yml");
+const OPENAPI_SPEC: &str = include_str!("../../../shared/api-spec/openapi.yml");
 
 #[get("/api-docs/openapi.yml")]
 async fn openapi_spec() -> impl Responder {

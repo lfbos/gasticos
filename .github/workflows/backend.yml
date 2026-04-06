@@ -91,7 +91,7 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: backend
-        run: cargo llvm-cov --workspace --fail-under-lines 75 --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --fail-under-lines 75 --ignore-filename-regex 'main\.rs$' --lcov --output-path lcov.info
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

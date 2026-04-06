@@ -7,11 +7,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
+    libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy workspace files
-COPY Cargo.toml ./
-COPY crates ./crates
+# Copy workspace files (context is project root)
+COPY backend/Cargo.toml ./
+COPY backend/crates ./crates
+COPY shared ./shared
 
 # Build release binaries
 RUN cargo build --release
@@ -25,6 +28,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/api /usr/local/bin/api
@@ -42,6 +46,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/worker /usr/local/bin/worker
@@ -57,6 +62,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
+    libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install cargo-watch for hot reloading
