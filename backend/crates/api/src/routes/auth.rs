@@ -78,7 +78,13 @@ async fn register(
         .values(&new_user)
         .get_result(&mut conn)
         .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+        .map_err(|e| match &e {
+            diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::UniqueViolation,
+                _,
+            ) => AppError::EmailAlreadyExists,
+            _ => AppError::Database(e.to_string()),
+        })?;
 
     // Generate tokens
     let access_token = generate_access_token(user.id, &jwt_config)?;
