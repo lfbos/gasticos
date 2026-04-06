@@ -73,7 +73,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - ./shared:/app/shared
+      - ./shared:/shared
       - cargo_cache:/usr/local/cargo/registry
       - target_cache:/app/target
 
@@ -100,7 +100,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - ./shared:/app/shared
+      - ./shared:/shared
       - cargo_cache:/usr/local/cargo/registry
       - target_cache:/app/target
 
