@@ -130,3 +130,153 @@ impl From<diesel_async::pooled_connection::deadpool::PoolError> for AppError {
         AppError::Database(format!("Connection pool error: {}", err))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::ResponseError;
+
+    #[test]
+    fn test_app_error_display_not_found() {
+        let err = AppError::NotFound("User".to_string());
+        assert_eq!(err.to_string(), "Not found: User");
+    }
+
+    #[test]
+    fn test_app_error_display_bad_request() {
+        let err = AppError::BadRequest("Invalid input".to_string());
+        assert_eq!(err.to_string(), "Bad request: Invalid input");
+    }
+
+    #[test]
+    fn test_app_error_display_unauthorized() {
+        let err = AppError::Unauthorized;
+        assert_eq!(err.to_string(), "Unauthorized");
+    }
+
+    #[test]
+    fn test_app_error_display_forbidden() {
+        let err = AppError::Forbidden;
+        assert_eq!(err.to_string(), "Forbidden");
+    }
+
+    #[test]
+    fn test_app_error_display_database() {
+        let err = AppError::Database("Connection failed".to_string());
+        assert_eq!(err.to_string(), "Database error: Connection failed");
+    }
+
+    #[test]
+    fn test_app_error_display_internal() {
+        let err = AppError::Internal("Something went wrong".to_string());
+        assert_eq!(err.to_string(), "Internal error: Something went wrong");
+    }
+
+    #[test]
+    fn test_app_error_display_invalid_credentials() {
+        let err = AppError::InvalidCredentials;
+        assert_eq!(err.to_string(), "Invalid credentials");
+    }
+
+    #[test]
+    fn test_app_error_display_token_expired() {
+        let err = AppError::TokenExpired;
+        assert_eq!(err.to_string(), "Token expired");
+    }
+
+    #[test]
+    fn test_app_error_display_token_invalid() {
+        let err = AppError::TokenInvalid;
+        assert_eq!(err.to_string(), "Invalid token");
+    }
+
+    #[test]
+    fn test_app_error_display_email_exists() {
+        let err = AppError::EmailAlreadyExists;
+        assert_eq!(err.to_string(), "Email already registered");
+    }
+
+    #[test]
+    fn test_app_error_display_password_weak() {
+        let err = AppError::PasswordTooWeak("Must contain uppercase".to_string());
+        assert_eq!(err.to_string(), "Password too weak: Must contain uppercase");
+    }
+
+    #[test]
+    fn test_status_code_not_found() {
+        let err = AppError::NotFound("test".to_string());
+        assert_eq!(err.status_code(), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn test_status_code_bad_request() {
+        let err = AppError::BadRequest("test".to_string());
+        assert_eq!(err.status_code(), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn test_status_code_unauthorized() {
+        let err = AppError::Unauthorized;
+        assert_eq!(err.status_code(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_status_code_forbidden() {
+        let err = AppError::Forbidden;
+        assert_eq!(err.status_code(), StatusCode::FORBIDDEN);
+    }
+
+    #[test]
+    fn test_status_code_database() {
+        let err = AppError::Database("test".to_string());
+        assert_eq!(err.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_status_code_internal() {
+        let err = AppError::Internal("test".to_string());
+        assert_eq!(err.status_code(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_status_code_invalid_credentials() {
+        let err = AppError::InvalidCredentials;
+        assert_eq!(err.status_code(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_status_code_token_expired() {
+        let err = AppError::TokenExpired;
+        assert_eq!(err.status_code(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_status_code_token_invalid() {
+        let err = AppError::TokenInvalid;
+        assert_eq!(err.status_code(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_status_code_email_exists() {
+        let err = AppError::EmailAlreadyExists;
+        assert_eq!(err.status_code(), StatusCode::CONFLICT);
+    }
+
+    #[test]
+    fn test_status_code_password_weak() {
+        let err = AppError::PasswordTooWeak("test".to_string());
+        assert_eq!(err.status_code(), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn test_from_diesel_not_found() {
+        let err: AppError = diesel::result::Error::NotFound.into();
+        assert!(matches!(err, AppError::NotFound(_)));
+    }
+
+    #[test]
+    fn test_from_diesel_other_error() {
+        let err: AppError = diesel::result::Error::RollbackTransaction.into();
+        assert!(matches!(err, AppError::Database(_)));
+    }
+}

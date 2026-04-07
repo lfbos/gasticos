@@ -1,5 +1,6 @@
 use actix_cors::Cors;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use belvo::BelvoClient;
 use diesel_async::RunQueryDsl;
 use shared::{auth::JwtConfig, db::create_pool, DbPool};
 use tracing::info;
@@ -61,6 +62,8 @@ async fn main() -> std::io::Result<()> {
         .init();
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let redis_url =
+        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
     let host = std::env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let port: u16 = std::env::var("PORT")
         .unwrap_or_else(|_| "8080".to_string())
@@ -75,6 +78,15 @@ async fn main() -> std::io::Result<()> {
     let jwt_config = JwtConfig::from_env().expect("Failed to load JWT configuration");
     info!("JWT configuration loaded");
 
+    info!("Connecting to Redis at {}...", redis_url);
+    let redis_client =
+        redis::Client::open(redis_url.as_str()).expect("Failed to create Redis client");
+    info!("Redis client created");
+
+    info!("Configuring Belvo client...");
+    let belvo_client = BelvoClient::from_env().expect("Failed to configure Belvo client");
+    info!("Belvo client configured for {}", belvo_client.base_url());
+
     info!("Starting Gasticos API server at {}:{}", host, port);
 
     HttpServer::new(move || {
@@ -88,6 +100,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(jwt_config.clone()))
+            .app_data(web::Data::new(redis_client.clone()))
+            .app_data(web::Data::new(belvo_client.clone()))
             .service(health)
             .service(index)
             .service(openapi_spec)
@@ -95,7 +109,11 @@ async fn main() -> std::io::Result<()> {
             .service(
                 SwaggerUi::new("/swagger-ui/{_:.*}").config(Config::new(["/api-docs/openapi.yml"])),
             )
-            .service(web::scope("/api/v1").configure(routes::auth_routes))
+            .service(
+                web::scope("/api/v1")
+                    .configure(routes::auth_routes)
+                    .configure(routes::belvo_routes),
+            )
     })
     .bind((host, port))?
     .run()

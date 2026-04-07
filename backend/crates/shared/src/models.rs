@@ -7,7 +7,10 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::schema::{categories, refresh_tokens, statements, transactions, users};
+use crate::schema::{
+    belvo_accounts, belvo_links, belvo_sync_logs, categories, refresh_tokens, statements,
+    transactions, users,
+};
 
 // ============================================================================
 // User
@@ -118,6 +121,7 @@ pub struct NewStatement {
 #[derive(Debug, Clone, Queryable, Selectable, Identifiable, Serialize)]
 #[diesel(table_name = transactions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(primary_key(id, date))]
 pub struct Transaction {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -131,6 +135,8 @@ pub struct Transaction {
     pub is_income: bool,
     pub is_user_categorized: bool,
     pub created_at: DateTime<Utc>,
+    pub belvo_transaction_id: Option<Uuid>,
+    pub belvo_account_id: Option<Uuid>,
 }
 
 /// New transaction for inserting into database
@@ -146,6 +152,8 @@ pub struct NewTransaction {
     pub balance: Option<bigdecimal::BigDecimal>,
     pub reference: Option<String>,
     pub is_income: bool,
+    pub belvo_transaction_id: Option<Uuid>,
+    pub belvo_account_id: Option<Uuid>,
 }
 
 // ============================================================================
@@ -172,6 +180,140 @@ pub struct NewRefreshToken {
     pub user_id: Uuid,
     pub token_hash: String,
     pub expires_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// Belvo Link
+// ============================================================================
+
+/// Belvo link status enum matching PostgreSQL enum
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, diesel_derive_enum::DbEnum)]
+#[ExistingTypePath = "crate::schema::sql_types::BelvoLinkStatus"]
+pub enum BelvoLinkStatus {
+    Valid,
+    Invalid,
+    TokenRequired,
+    Unconfirmed,
+}
+
+/// Belvo link model for reading from database
+#[derive(Debug, Clone, Queryable, Selectable, Identifiable, Serialize)]
+#[diesel(table_name = belvo_links)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct BelvoLink {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub belvo_link_id: Uuid,
+    pub institution: String,
+    pub institution_name: String,
+    pub access_mode: String,
+    pub status: BelvoLinkStatus,
+    pub last_synced_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// New Belvo link for inserting into database
+#[derive(Debug, Insertable)]
+#[diesel(table_name = belvo_links)]
+pub struct NewBelvoLink {
+    pub user_id: Uuid,
+    pub belvo_link_id: Uuid,
+    pub institution: String,
+    pub institution_name: String,
+    pub access_mode: String,
+    pub status: BelvoLinkStatus,
+}
+
+// ============================================================================
+// Belvo Account
+// ============================================================================
+
+/// Belvo account type enum matching PostgreSQL enum
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, diesel_derive_enum::DbEnum)]
+#[ExistingTypePath = "crate::schema::sql_types::BelvoAccountType"]
+pub enum BelvoAccountType {
+    Checking,
+    Savings,
+    CreditCard,
+    Loan,
+    Other,
+}
+
+/// Belvo account model for reading from database
+#[derive(Debug, Clone, Queryable, Selectable, Identifiable, Serialize)]
+#[diesel(table_name = belvo_accounts)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct BelvoAccount {
+    pub id: Uuid,
+    pub link_id: Uuid,
+    pub belvo_account_id: Uuid,
+    pub name: Option<String>,
+    pub number_masked: Option<String>,
+    #[diesel(column_name = "type_")]
+    pub account_type: BelvoAccountType,
+    pub currency: String,
+    pub balance_current: Option<bigdecimal::BigDecimal>,
+    pub balance_available: Option<bigdecimal::BigDecimal>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// New Belvo account for inserting into database
+#[derive(Debug, Insertable)]
+#[diesel(table_name = belvo_accounts)]
+pub struct NewBelvoAccount {
+    pub link_id: Uuid,
+    pub belvo_account_id: Uuid,
+    pub name: Option<String>,
+    pub number_masked: Option<String>,
+    #[diesel(column_name = "type_")]
+    pub account_type: BelvoAccountType,
+    pub currency: String,
+    pub balance_current: Option<bigdecimal::BigDecimal>,
+    pub balance_available: Option<bigdecimal::BigDecimal>,
+}
+
+// ============================================================================
+// Belvo Sync Log
+// ============================================================================
+
+/// Belvo sync status enum matching PostgreSQL enum
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, diesel_derive_enum::DbEnum)]
+#[ExistingTypePath = "crate::schema::sql_types::BelvoSyncStatus"]
+pub enum BelvoSyncStatus {
+    Pending,
+    InProgress,
+    Completed,
+    Failed,
+}
+
+/// Belvo sync log model for reading from database
+#[derive(Debug, Clone, Queryable, Selectable, Identifiable, Serialize)]
+#[diesel(table_name = belvo_sync_logs)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct BelvoSyncLog {
+    pub id: Uuid,
+    pub link_id: Uuid,
+    pub status: BelvoSyncStatus,
+    pub transactions_fetched: Option<i32>,
+    pub transactions_created: Option<i32>,
+    pub transactions_updated: Option<i32>,
+    pub date_from: Option<NaiveDate>,
+    pub date_to: Option<NaiveDate>,
+    pub error_message: Option<String>,
+    pub started_at: DateTime<Utc>,
+    pub completed_at: Option<DateTime<Utc>>,
+}
+
+/// New Belvo sync log for inserting into database
+#[derive(Debug, Insertable)]
+#[diesel(table_name = belvo_sync_logs)]
+pub struct NewBelvoSyncLog {
+    pub link_id: Uuid,
+    pub status: BelvoSyncStatus,
+    pub date_from: Option<NaiveDate>,
+    pub date_to: Option<NaiveDate>,
 }
 
 // ============================================================================

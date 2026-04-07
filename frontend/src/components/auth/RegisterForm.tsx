@@ -2,15 +2,15 @@
  * Registration form component with validation.
  */
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks';
-import { registerSchema, type RegisterFormData } from '@/lib/validations/auth';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks";
+import { registerSchema, type RegisterFormData } from "@/lib/validations/auth";
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -41,7 +41,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       });
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al registrarse');
+      setError(err instanceof Error ? err.message : "Error al registrarse");
     } finally {
       setIsLoading(false);
     }
@@ -56,9 +56,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             id="name"
             type="text"
             autoComplete="name"
-            {...register('name')}
+            {...register("name")}
             className="mt-1"
-            aria-invalid={errors.name ? 'true' : 'false'}
+            aria-invalid={errors.name ? "true" : "false"}
           />
           {errors.name && (
             <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -71,9 +71,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             id="email"
             type="email"
             autoComplete="email"
-            {...register('email')}
+            {...register("email")}
             className="mt-1"
-            aria-invalid={errors.email ? 'true' : 'false'}
+            aria-invalid={errors.email ? "true" : "false"}
           />
           {errors.email && (
             <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -86,9 +86,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             id="password"
             type="password"
             autoComplete="new-password"
-            {...register('password')}
+            {...register("password")}
             className="mt-1"
-            aria-invalid={errors.password ? 'true' : 'false'}
+            aria-invalid={errors.password ? "true" : "false"}
           />
           {errors.password && (
             <p className="mt-1 text-sm text-red-600">
@@ -106,9 +106,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             id="confirmPassword"
             type="password"
             autoComplete="new-password"
-            {...register('confirmPassword')}
+            {...register("confirmPassword")}
             className="mt-1"
-            aria-invalid={errors.confirmPassword ? 'true' : 'false'}
+            aria-invalid={errors.confirmPassword ? "true" : "false"}
           />
           {errors.confirmPassword && (
             <p className="mt-1 text-sm text-red-600">
@@ -124,12 +124,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         )}
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Registrando...' : 'Registrarse'}
+          {isLoading ? "Registrando..." : "Registrarse"}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-600">
-        ¿Ya tienes cuenta?{' '}
+        ¿Ya tienes cuenta?{" "}
         <Link
           to="/login"
           className="font-medium text-primary hover:text-primary/80"

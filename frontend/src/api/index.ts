@@ -1,2 +1,3 @@
-export { apiClient, getApiErrorMessage } from './client';
-export { authApi } from './auth';
+export { apiClient, getApiErrorMessage } from "./client";
+export { authApi } from "./auth";
+export { belvoApi } from "./belvo";

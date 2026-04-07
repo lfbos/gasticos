@@ -2,9 +2,9 @@
  * Zustand store for authentication state.
  */
 
-import { create } from 'zustand';
-import { storage } from '@/lib/storage';
-import type { User } from '@/types';
+import { create } from "zustand";
+import { storage } from "@/lib/storage";
+import type { User } from "@/types";
 
 interface AuthState {
   user: User | null;
@@ -23,8 +23,14 @@ interface AuthActions {
 }
 
 // Check for tokens on store creation (synchronous)
-const initialAccessToken = typeof window !== 'undefined' ? localStorage.getItem('gasticos_access_token') : null;
-const initialRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('gasticos_refresh_token') : null;
+const initialAccessToken =
+  typeof window !== "undefined"
+    ? localStorage.getItem("gasticos_access_token")
+    : null;
+const initialRefreshToken =
+  typeof window !== "undefined"
+    ? localStorage.getItem("gasticos_refresh_token")
+    : null;
 const hasTokens = !!(initialAccessToken && initialRefreshToken);
 
 export const useAuthStore = create<AuthState & AuthActions>((set) => ({

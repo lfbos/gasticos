@@ -2,15 +2,15 @@
  * Login form component with validation.
  */
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks';
-import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks";
+import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -37,7 +37,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       await login(data);
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión");
     } finally {
       setIsLoading(false);
     }
@@ -52,9 +52,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             id="email"
             type="email"
             autoComplete="email"
-            {...register('email')}
+            {...register("email")}
             className="mt-1"
-            aria-invalid={errors.email ? 'true' : 'false'}
+            aria-invalid={errors.email ? "true" : "false"}
           />
           {errors.email && (
             <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -67,9 +67,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             id="password"
             type="password"
             autoComplete="current-password"
-            {...register('password')}
+            {...register("password")}
             className="mt-1"
-            aria-invalid={errors.password ? 'true' : 'false'}
+            aria-invalid={errors.password ? "true" : "false"}
           />
           {errors.password && (
             <p className="mt-1 text-sm text-red-600">
@@ -85,12 +85,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         )}
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-600">
-        ¿No tienes cuenta?{' '}
+        ¿No tienes cuenta?{" "}
         <Link
           to="/register"
           className="font-medium text-primary hover:text-primary/80"

@@ -2,8 +2,83 @@
 
 pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "belvo_account_type"))]
+    pub struct BelvoAccountType;
+
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "belvo_link_status"))]
+    pub struct BelvoLinkStatus;
+
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "belvo_sync_status"))]
+    pub struct BelvoSyncStatus;
+
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "statement_status"))]
     pub struct StatementStatus;
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::BelvoAccountType;
+
+    belvo_accounts (id) {
+        id -> Uuid,
+        link_id -> Uuid,
+        belvo_account_id -> Uuid,
+        #[max_length = 255]
+        name -> Nullable<Varchar>,
+        #[max_length = 50]
+        number_masked -> Nullable<Varchar>,
+        #[sql_name = "type"]
+        type_ -> BelvoAccountType,
+        #[max_length = 10]
+        currency -> Varchar,
+        balance_current -> Nullable<Numeric>,
+        balance_available -> Nullable<Numeric>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::BelvoLinkStatus;
+
+    belvo_links (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        belvo_link_id -> Uuid,
+        #[max_length = 100]
+        institution -> Varchar,
+        #[max_length = 255]
+        institution_name -> Varchar,
+        #[max_length = 50]
+        access_mode -> Varchar,
+        status -> BelvoLinkStatus,
+        last_synced_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::BelvoSyncStatus;
+
+    belvo_sync_logs (id) {
+        id -> Uuid,
+        link_id -> Uuid,
+        status -> BelvoSyncStatus,
+        transactions_fetched -> Nullable<Int4>,
+        transactions_created -> Nullable<Int4>,
+        transactions_updated -> Nullable<Int4>,
+        date_from -> Nullable<Date>,
+        date_to -> Nullable<Date>,
+        error_message -> Nullable<Text>,
+        started_at -> Timestamptz,
+        completed_at -> Nullable<Timestamptz>,
+    }
 }
 
 diesel::table! {
@@ -72,6 +147,8 @@ diesel::table! {
         is_income -> Bool,
         is_user_categorized -> Bool,
         created_at -> Timestamptz,
+        belvo_transaction_id -> Nullable<Uuid>,
+        belvo_account_id -> Nullable<Uuid>,
     }
 }
 
@@ -90,6 +167,8 @@ diesel::table! {
         is_income -> Bool,
         is_user_categorized -> Bool,
         created_at -> Timestamptz,
+        belvo_transaction_id -> Nullable<Uuid>,
+        belvo_account_id -> Nullable<Uuid>,
     }
 }
 
@@ -108,6 +187,8 @@ diesel::table! {
         is_income -> Bool,
         is_user_categorized -> Bool,
         created_at -> Timestamptz,
+        belvo_transaction_id -> Nullable<Uuid>,
+        belvo_account_id -> Nullable<Uuid>,
     }
 }
 
@@ -126,6 +207,8 @@ diesel::table! {
         is_income -> Bool,
         is_user_categorized -> Bool,
         created_at -> Timestamptz,
+        belvo_transaction_id -> Nullable<Uuid>,
+        belvo_account_id -> Nullable<Uuid>,
     }
 }
 
@@ -144,6 +227,8 @@ diesel::table! {
         is_income -> Bool,
         is_user_categorized -> Bool,
         created_at -> Timestamptz,
+        belvo_transaction_id -> Nullable<Uuid>,
+        belvo_account_id -> Nullable<Uuid>,
     }
 }
 
@@ -162,6 +247,8 @@ diesel::table! {
         is_income -> Bool,
         is_user_categorized -> Bool,
         created_at -> Timestamptz,
+        belvo_transaction_id -> Nullable<Uuid>,
+        belvo_account_id -> Nullable<Uuid>,
     }
 }
 
@@ -179,29 +266,41 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(belvo_accounts -> belvo_links (link_id));
+diesel::joinable!(belvo_links -> users (user_id));
+diesel::joinable!(belvo_sync_logs -> belvo_links (link_id));
 diesel::joinable!(categories -> users (user_id));
 diesel::joinable!(refresh_tokens -> users (user_id));
 diesel::joinable!(statements -> users (user_id));
+diesel::joinable!(transactions -> belvo_accounts (belvo_account_id));
 diesel::joinable!(transactions -> categories (category_id));
 diesel::joinable!(transactions -> statements (statement_id));
 diesel::joinable!(transactions -> users (user_id));
+diesel::joinable!(transactions_2023 -> belvo_accounts (belvo_account_id));
 diesel::joinable!(transactions_2023 -> categories (category_id));
 diesel::joinable!(transactions_2023 -> statements (statement_id));
 diesel::joinable!(transactions_2023 -> users (user_id));
+diesel::joinable!(transactions_2024 -> belvo_accounts (belvo_account_id));
 diesel::joinable!(transactions_2024 -> categories (category_id));
 diesel::joinable!(transactions_2024 -> statements (statement_id));
 diesel::joinable!(transactions_2024 -> users (user_id));
+diesel::joinable!(transactions_2025 -> belvo_accounts (belvo_account_id));
 diesel::joinable!(transactions_2025 -> categories (category_id));
 diesel::joinable!(transactions_2025 -> statements (statement_id));
 diesel::joinable!(transactions_2025 -> users (user_id));
+diesel::joinable!(transactions_2026 -> belvo_accounts (belvo_account_id));
 diesel::joinable!(transactions_2026 -> categories (category_id));
 diesel::joinable!(transactions_2026 -> statements (statement_id));
 diesel::joinable!(transactions_2026 -> users (user_id));
+diesel::joinable!(transactions_2027 -> belvo_accounts (belvo_account_id));
 diesel::joinable!(transactions_2027 -> categories (category_id));
 diesel::joinable!(transactions_2027 -> statements (statement_id));
 diesel::joinable!(transactions_2027 -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    belvo_accounts,
+    belvo_links,
+    belvo_sync_logs,
     categories,
     refresh_tokens,
     statements,

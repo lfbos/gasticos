@@ -59,6 +59,24 @@
     "uploadSuccess": "Extracto subido exitosamente",
     "uploadError": "Error al subir el extracto"
   },
+  "upload": {
+    "title": "Subir extracto bancario",
+    "csvDescription": "Si prefieres, puedes subir manualmente un archivo CSV con tus transacciones.",
+    "selectBank": "Selecciona tu banco",
+    "dragAndDrop": "Arrastra y suelta tu archivo aquí",
+    "dropHere": "Suelta el archivo aquí",
+    "orClickToSelect": "o haz clic para seleccionar",
+    "supportedFormats": "Formatos soportados: CSV (max. 10MB)",
+    "uploading": "Subiendo...",
+    "submit": "Subir extracto",
+    "noStatements": "No has subido ningún extracto aún",
+    "transactionsFound": "{{count}} transacciones encontradas",
+    "errors": {
+      "fileTooLarge": "El archivo es demasiado grande. Máximo 10MB.",
+      "invalidType": "Tipo de archivo no soportado. Solo se aceptan archivos CSV.",
+      "generic": "Error al procesar el archivo"
+    }
+  },
   "dashboard": {
     "title": "Panel",
     "totalIncome": "Ingresos totales",
@@ -91,6 +109,7 @@
     "davivienda": "Davivienda",
     "banco_de_bogota": "Banco de Bogotá",
     "bbva_colombia": "BBVA Colombia",
+    "banco_falabella": "Banco Falabella",
     "banco_de_occidente": "Banco de Occidente",
     "scotiabank_colpatria": "Scotiabank Colpatria",
     "itau_colombia": "Itaú Colombia",
@@ -121,5 +140,41 @@
     "currency": "{{value, currency}}",
     "date": "{{value, date}}",
     "dateShort": "{{value, dateShort}}"
+  },
+  "connect": {
+    "title": "Conectar banco",
+    "description": "Conecta tu banco para importar tus transacciones automáticamente o sube un archivo CSV manualmente.",
+    "tabs": {
+      "belvo": "Conectar banco",
+      "csv": "Subir CSV"
+    }
+  },
+  "belvo": {
+    "connectBank": "Conectar banco",
+    "connecting": "Conectando...",
+    "loadingWidget": "Cargando...",
+    "connectedBanks": "Bancos conectados",
+    "noConnectedBanks": "No tienes bancos conectados",
+    "connectBankDescription": "Conecta tu banco para importar tus transacciones automáticamente.",
+    "connectedBanksCount": "{{count}} banco(s) conectado(s)",
+    "connectNewBank": "Conectar nuevo banco",
+    "connectNewBankDescription": "Selecciona tu banco y autentica de forma segura para importar tus transacciones.",
+    "lastSync": "Última sincronización",
+    "sync": "Sincronizar",
+    "disconnect": "Desconectar",
+    "totalBalance": "Saldo total",
+    "status": {
+      "valid": "Conectado",
+      "invalid": "Inválido",
+      "tokenRequired": "Requiere actualización",
+      "unconfirmed": "Pendiente"
+    },
+    "accountTypes": {
+      "checking": "Cuenta corriente",
+      "savings": "Cuenta de ahorros",
+      "credit_card": "Tarjeta de crédito",
+      "loan": "Préstamo",
+      "other": "Otro"
+    }
   }
 }

@@ -2,10 +2,10 @@
  * Registration page with form.
  */
 
-import { Navigate, useNavigate } from 'react-router-dom';
-import { AuthLayout } from '@/components/layout/AuthLayout';
-import { RegisterForm } from '@/components/auth/RegisterForm';
-import { useAuth } from '@/hooks';
+import { Navigate, useNavigate } from "react-router-dom";
+import { AuthLayout } from "@/components/layout/AuthLayout";
+import { RegisterForm } from "@/components/auth/RegisterForm";
+import { useAuth } from "@/hooks";
 
 export function RegisterPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -24,7 +24,7 @@ export function RegisterPage() {
   }
 
   const handleSuccess = () => {
-    navigate('/dashboard', { replace: true });
+    navigate("/dashboard", { replace: true });
   };
 
   return (
