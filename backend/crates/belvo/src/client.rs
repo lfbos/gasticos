@@ -7,8 +7,9 @@ use tracing::{debug, error};
 use crate::error::{BelvoApiError, BelvoError, Result};
 
 /// Belvo API environment.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum BelvoEnvironment {
+    #[default]
     Sandbox,
     Development,
     Production,
@@ -23,21 +24,18 @@ impl BelvoEnvironment {
             BelvoEnvironment::Production => "https://api.belvo.com",
         }
     }
-
-    /// Parse environment from string.
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s.to_lowercase().as_str() {
-            "sandbox" => Some(BelvoEnvironment::Sandbox),
-            "development" => Some(BelvoEnvironment::Development),
-            "production" => Some(BelvoEnvironment::Production),
-            _ => None,
-        }
-    }
 }
 
-impl Default for BelvoEnvironment {
-    fn default() -> Self {
-        BelvoEnvironment::Sandbox
+impl std::str::FromStr for BelvoEnvironment {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "sandbox" => Ok(BelvoEnvironment::Sandbox),
+            "development" => Ok(BelvoEnvironment::Development),
+            "production" => Ok(BelvoEnvironment::Production),
+            _ => Err(format!("Invalid environment: {}", s)),
+        }
     }
 }
 
@@ -66,8 +64,8 @@ impl BelvoConfig {
         let secret_password = std::env::var("BELVO_SECRET_PASSWORD")
             .map_err(|_| BelvoError::Configuration("BELVO_SECRET_PASSWORD not set".to_string()))?;
         let env_str = std::env::var("BELVO_ENV").unwrap_or_else(|_| "sandbox".to_string());
-        let environment = BelvoEnvironment::from_str(&env_str)
-            .ok_or_else(|| BelvoError::Configuration(format!("Invalid BELVO_ENV: {}", env_str)))?;
+        let environment = env_str.parse::<BelvoEnvironment>()
+            .map_err(|_| BelvoError::Configuration(format!("Invalid BELVO_ENV: {}", env_str)))?;
 
         Ok(Self {
             secret_id,
@@ -286,13 +284,13 @@ mod tests {
     #[test]
     fn test_environment_from_str() {
         assert_eq!(
-            BelvoEnvironment::from_str("sandbox"),
-            Some(BelvoEnvironment::Sandbox)
+            "sandbox".parse::<BelvoEnvironment>().unwrap(),
+            BelvoEnvironment::Sandbox
         );
         assert_eq!(
-            BelvoEnvironment::from_str("PRODUCTION"),
-            Some(BelvoEnvironment::Production)
+            "PRODUCTION".parse::<BelvoEnvironment>().unwrap(),
+            BelvoEnvironment::Production
         );
-        assert_eq!(BelvoEnvironment::from_str("invalid"), None);
+        assert!("invalid".parse::<BelvoEnvironment>().is_err());
     }
 }

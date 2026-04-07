@@ -84,17 +84,12 @@ pub struct Link {
 }
 
 /// Link access mode.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AccessMode {
+    #[default]
     Recurrent,
     Single,
-}
-
-impl Default for AccessMode {
-    fn default() -> Self {
-        AccessMode::Recurrent
-    }
 }
 
 /// Link status.
