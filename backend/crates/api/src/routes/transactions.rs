@@ -138,7 +138,7 @@ pub async fn list_transactions(
     let mut conn = pool.get().await?;
 
     let page = query.page.unwrap_or(1).max(1);
-    let per_page = query.per_page.unwrap_or(20).min(100).max(1);
+    let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
     // Build base query

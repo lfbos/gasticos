@@ -48,7 +48,7 @@ export function DashboardPage() {
 
   const handleCategorySelect = async (
     transactionId: string,
-    categoryId: string | null
+    categoryId: string | null,
   ) => {
     try {
       await updateTransactionCategory(transactionId, categoryId);
