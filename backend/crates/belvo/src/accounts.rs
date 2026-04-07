@@ -110,9 +110,10 @@ mod tests {
 
         Mock::given(method("POST"))
             .and(path("/api/accounts/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(vec![
-                sample_account_json(account_id, link_id)
-            ]))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(vec![sample_account_json(account_id, link_id)]),
+            )
             .mount(&mock_server)
             .await;
 

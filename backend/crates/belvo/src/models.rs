@@ -614,7 +614,10 @@ mod tests {
 
     #[test]
     fn test_institutions_display_name() {
-        assert_eq!(institutions::display_name("bancolombia_retail_co"), "Bancolombia");
+        assert_eq!(
+            institutions::display_name("bancolombia_retail_co"),
+            "Bancolombia"
+        );
         assert_eq!(institutions::display_name("nequi_co"), "Nequi");
         assert_eq!(institutions::display_name("daviplata_co"), "Daviplata");
         assert_eq!(institutions::display_name("unknown_bank"), "Unknown Bank");

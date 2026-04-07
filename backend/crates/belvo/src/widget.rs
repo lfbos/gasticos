@@ -178,9 +178,7 @@ mod tests {
             .await;
 
         let client = create_test_client(&mock_server.uri());
-        let result = client
-            .create_widget_token_for_link("link_123")
-            .await;
+        let result = client.create_widget_token_for_link("link_123").await;
 
         assert!(result.is_ok());
         let token = result.unwrap();

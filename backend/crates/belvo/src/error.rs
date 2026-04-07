@@ -81,7 +81,10 @@ mod tests {
     #[test]
     fn test_belvo_error_authentication() {
         let err = BelvoError::Authentication("Invalid credentials".to_string());
-        assert_eq!(err.to_string(), "Authentication failed: Invalid credentials");
+        assert_eq!(
+            err.to_string(),
+            "Authentication failed: Invalid credentials"
+        );
     }
 
     #[test]
@@ -153,7 +156,8 @@ mod tests {
 
     #[test]
     fn test_belvo_api_error_deserialization() {
-        let json = r#"{"code": "invalid_link", "message": "Link not found", "request_id": "abc123"}"#;
+        let json =
+            r#"{"code": "invalid_link", "message": "Link not found", "request_id": "abc123"}"#;
         let api_error: BelvoApiError = serde_json::from_str(json).unwrap();
         assert_eq!(api_error.code, Some("invalid_link".to_string()));
         assert_eq!(api_error.message, Some("Link not found".to_string()));

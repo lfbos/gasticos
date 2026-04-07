@@ -184,9 +184,10 @@ mod tests {
 
         Mock::given(method("POST"))
             .and(path("/api/transactions/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(vec![
-                sample_transaction_json(transaction_id, account_id)
-            ]))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(vec![sample_transaction_json(transaction_id, account_id)]),
+            )
             .mount(&mock_server)
             .await;
 
@@ -215,9 +216,10 @@ mod tests {
 
         Mock::given(method("POST"))
             .and(path("/api/transactions/"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(vec![
-                sample_transaction_json(transaction_id, account_id)
-            ]))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(vec![sample_transaction_json(transaction_id, account_id)]),
+            )
             .mount(&mock_server)
             .await;
 
@@ -250,7 +252,9 @@ mod tests {
             .await;
 
         let client = create_test_client(&mock_server.uri());
-        let result = client.list_transactions(None, None, None, None, None, None).await;
+        let result = client
+            .list_transactions(None, None, None, None, None, None)
+            .await;
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap().count, 0);

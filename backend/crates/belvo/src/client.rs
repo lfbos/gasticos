@@ -371,7 +371,10 @@ mod tests {
 
         Mock::given(method("GET"))
             .and(path("/api/test/"))
-            .and(header("Authorization", "Basic dGVzdF9pZDp0ZXN0X3Bhc3N3b3Jk"))
+            .and(header(
+                "Authorization",
+                "Basic dGVzdF9pZDp0ZXN0X3Bhc3N3b3Jk",
+            ))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "data": "test"
             })))
@@ -448,10 +451,7 @@ mod tests {
 
         Mock::given(method("GET"))
             .and(path("/api/test/"))
-            .respond_with(
-                ResponseTemplate::new(429)
-                    .insert_header("Retry-After", "120")
-            )
+            .respond_with(ResponseTemplate::new(429).insert_header("Retry-After", "120"))
             .mount(&mock_server)
             .await;
 
