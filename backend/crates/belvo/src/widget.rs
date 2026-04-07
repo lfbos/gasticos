@@ -91,3 +91,118 @@ impl BelvoClient {
         self.post("/api/token/", &request).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use crate::client::{BelvoConfig, BelvoEnvironment};
+    use crate::BelvoClient;
+
+    fn create_test_client(base_url: &str) -> BelvoClient {
+        let config = BelvoConfig {
+            secret_id: "test_id".to_string(),
+            secret_password: "test_password".to_string(),
+            environment: BelvoEnvironment::Sandbox,
+        };
+        let mut client = BelvoClient::new(config).unwrap();
+        // Override base URL for testing
+        client.set_base_url(base_url.to_string());
+        client
+    }
+
+    #[tokio::test]
+    async fn test_create_widget_token() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/token/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access": "test_access_token",
+                "refresh": "test_refresh_token"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.create_widget_token().await;
+
+        assert!(result.is_ok());
+        let token = result.unwrap();
+        assert_eq!(token.access, "test_access_token");
+        assert_eq!(token.refresh, "test_refresh_token");
+    }
+
+    #[tokio::test]
+    async fn test_create_widget_token_with_config() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/token/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access": "config_access_token",
+                "refresh": "config_refresh_token"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .create_widget_token_with_config(
+                Some("Gasticos"),
+                Some("https://example.com/logo.png"),
+                Some(vec!["bancolombia_retail_co".to_string()]),
+                None,
+                None,
+                None,
+            )
+            .await;
+
+        assert!(result.is_ok());
+        let token = result.unwrap();
+        assert_eq!(token.access, "config_access_token");
+    }
+
+    #[tokio::test]
+    async fn test_create_widget_token_for_link() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/token/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access": "link_access_token",
+                "refresh": "link_refresh_token"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .create_widget_token_for_link("link_123")
+            .await;
+
+        assert!(result.is_ok());
+        let token = result.unwrap();
+        assert_eq!(token.access, "link_access_token");
+    }
+
+    #[tokio::test]
+    async fn test_create_widget_token_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/token/"))
+            .respond_with(ResponseTemplate::new(401).set_body_json(serde_json::json!({
+                "code": "authentication_failed",
+                "message": "Invalid credentials"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.create_widget_token().await;
+
+        assert!(result.is_err());
+    }
+}

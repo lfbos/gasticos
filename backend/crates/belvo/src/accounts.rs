@@ -68,3 +68,144 @@ impl BelvoClient {
         self.delete(&format!("/api/accounts/{}/", account_id)).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use uuid::Uuid;
+    use wiremock::matchers::{method, path, path_regex, query_param};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use crate::client::{BelvoConfig, BelvoEnvironment};
+    use crate::BelvoClient;
+
+    fn create_test_client(base_url: &str) -> BelvoClient {
+        let config = BelvoConfig {
+            secret_id: "test_id".to_string(),
+            secret_password: "test_password".to_string(),
+            environment: BelvoEnvironment::Sandbox,
+        };
+        let mut client = BelvoClient::new(config).unwrap();
+        client.set_base_url(base_url.to_string());
+        client
+    }
+
+    fn sample_account_json(id: Uuid, link_id: Uuid) -> serde_json::Value {
+        serde_json::json!({
+            "id": id.to_string(),
+            "link": link_id.to_string(),
+            "category": "CHECKING_ACCOUNT",
+            "currency": "COP",
+            "balance": {
+                "current": 1500000.50,
+                "available": 1400000.00
+            }
+        })
+    }
+
+    #[tokio::test]
+    async fn test_retrieve_accounts() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+        let account_id = Uuid::new_v4();
+
+        Mock::given(method("POST"))
+            .and(path("/api/accounts/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(vec![
+                sample_account_json(account_id, link_id)
+            ]))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.retrieve_accounts(link_id).await;
+
+        assert!(result.is_ok());
+        let accounts = result.unwrap();
+        assert_eq!(accounts.len(), 1);
+        assert_eq!(accounts[0].currency, "COP");
+    }
+
+    #[tokio::test]
+    async fn test_list_accounts_for_link() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+        let account_id = Uuid::new_v4();
+
+        Mock::given(method("GET"))
+            .and(query_param("link", link_id.to_string().as_str()))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 1,
+                "next": null,
+                "previous": null,
+                "results": [sample_account_json(account_id, link_id)]
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.list_accounts_for_link(link_id).await;
+
+        assert!(result.is_ok());
+        let accounts = result.unwrap();
+        assert_eq!(accounts.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_list_accounts_paginated() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/accounts/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.list_accounts(None, None, None).await;
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().count, 0);
+    }
+
+    #[tokio::test]
+    async fn test_get_account() {
+        let mock_server = MockServer::start().await;
+        let account_id = Uuid::new_v4();
+        let link_id = Uuid::new_v4();
+
+        Mock::given(method("GET"))
+            .and(path_regex(r"/api/accounts/[a-f0-9-]+/"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(sample_account_json(account_id, link_id)),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.get_account(account_id).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_delete_account() {
+        let mock_server = MockServer::start().await;
+        let account_id = Uuid::new_v4();
+
+        Mock::given(method("DELETE"))
+            .and(path_regex(r"/api/accounts/[a-f0-9-]+/"))
+            .respond_with(ResponseTemplate::new(204))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.delete_account(account_id).await;
+
+        assert!(result.is_ok());
+    }
+}

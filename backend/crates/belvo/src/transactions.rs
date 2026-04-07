@@ -127,3 +127,243 @@ impl BelvoClient {
             .await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::NaiveDate;
+    use uuid::Uuid;
+    use wiremock::matchers::{method, path, path_regex, query_param};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    use crate::client::{BelvoConfig, BelvoEnvironment};
+    use crate::BelvoClient;
+
+    fn create_test_client(base_url: &str) -> BelvoClient {
+        let config = BelvoConfig {
+            secret_id: "test_id".to_string(),
+            secret_password: "test_password".to_string(),
+            environment: BelvoEnvironment::Sandbox,
+        };
+        let mut client = BelvoClient::new(config).unwrap();
+        client.set_base_url(base_url.to_string());
+        client
+    }
+
+    fn sample_transaction_json(id: Uuid, account_id: Uuid) -> serde_json::Value {
+        serde_json::json!({
+            "id": id.to_string(),
+            "account": {
+                "id": account_id.to_string(),
+                "link": Uuid::new_v4().to_string(),
+                "category": "CHECKING_ACCOUNT",
+                "currency": "COP",
+                "balance": {
+                    "current": 1000000.0,
+                    "available": 900000.0
+                }
+            },
+            "value_date": "2024-01-15",
+            "accounting_date": "2024-01-15",
+            "amount": -50000.0,
+            "balance": 950000.0,
+            "currency": "COP",
+            "description": "COMPRA SUPERMERCADO",
+            "reference": "REF123",
+            "type": "OUTFLOW",
+            "status": "PROCESSED",
+            "category": "Online Platforms / Leisure"
+        })
+    }
+
+    #[tokio::test]
+    async fn test_retrieve_transactions() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+        let transaction_id = Uuid::new_v4();
+        let account_id = Uuid::new_v4();
+
+        Mock::given(method("POST"))
+            .and(path("/api/transactions/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(vec![
+                sample_transaction_json(transaction_id, account_id)
+            ]))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .retrieve_transactions(
+                link_id,
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+                None,
+            )
+            .await;
+
+        assert!(result.is_ok());
+        let transactions = result.unwrap();
+        assert_eq!(transactions.len(), 1);
+        assert_eq!(transactions[0].currency, "COP");
+    }
+
+    #[tokio::test]
+    async fn test_retrieve_transactions_with_account() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+        let account_id = Uuid::new_v4();
+        let transaction_id = Uuid::new_v4();
+
+        Mock::given(method("POST"))
+            .and(path("/api/transactions/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(vec![
+                sample_transaction_json(transaction_id, account_id)
+            ]))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .retrieve_transactions(
+                link_id,
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+                Some(account_id),
+            )
+            .await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_list_transactions() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/transactions/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.list_transactions(None, None, None, None, None, None).await;
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().count, 0);
+    }
+
+    #[tokio::test]
+    async fn test_list_transactions_with_filters() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+
+        Mock::given(method("GET"))
+            .and(query_param("link", link_id.to_string().as_str()))
+            .and(query_param("page", "1"))
+            .and(query_param("page_size", "50"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .list_transactions(Some(1), Some(50), Some(link_id), None, None, None)
+            .await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_transaction() {
+        let mock_server = MockServer::start().await;
+        let transaction_id = Uuid::new_v4();
+        let account_id = Uuid::new_v4();
+
+        Mock::given(method("GET"))
+            .and(path_regex(r"/api/transactions/[a-f0-9-]+/"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(sample_transaction_json(transaction_id, account_id)),
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.get_transaction(transaction_id).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_delete_transaction() {
+        let mock_server = MockServer::start().await;
+        let transaction_id = Uuid::new_v4();
+
+        Mock::given(method("DELETE"))
+            .and(path_regex(r"/api/transactions/[a-f0-9-]+/"))
+            .respond_with(ResponseTemplate::new(204))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.delete_transaction(transaction_id).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_list_all_transactions_for_link() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+        let transaction_id = Uuid::new_v4();
+        let account_id = Uuid::new_v4();
+
+        // First page with next
+        Mock::given(method("GET"))
+            .and(query_param("page", "1"))
+            .and(query_param("link", link_id.to_string().as_str()))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 2,
+                "next": "https://api.belvo.com/api/transactions/?page=2",
+                "previous": null,
+                "results": [sample_transaction_json(transaction_id, account_id)]
+            })))
+            .mount(&mock_server)
+            .await;
+
+        // Second page without next
+        Mock::given(method("GET"))
+            .and(query_param("page", "2"))
+            .and(query_param("link", link_id.to_string().as_str()))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 2,
+                "next": null,
+                "previous": "https://api.belvo.com/api/transactions/?page=1",
+                "results": [sample_transaction_json(Uuid::new_v4(), account_id)]
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .list_all_transactions_for_link(
+                link_id,
+                NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+                NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+            )
+            .await;
+
+        assert!(result.is_ok());
+        let transactions = result.unwrap();
+        assert_eq!(transactions.len(), 2);
+    }
+}

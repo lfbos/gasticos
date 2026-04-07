@@ -470,3 +470,201 @@ pub mod institutions {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_access_mode_serialization() {
+        assert_eq!(
+            serde_json::to_string(&AccessMode::Recurrent).unwrap(),
+            "\"recurrent\""
+        );
+        assert_eq!(
+            serde_json::to_string(&AccessMode::Single).unwrap(),
+            "\"single\""
+        );
+    }
+
+    #[test]
+    fn test_access_mode_deserialization() {
+        assert_eq!(
+            serde_json::from_str::<AccessMode>("\"recurrent\"").unwrap(),
+            AccessMode::Recurrent
+        );
+        assert_eq!(
+            serde_json::from_str::<AccessMode>("\"single\"").unwrap(),
+            AccessMode::Single
+        );
+    }
+
+    #[test]
+    fn test_access_mode_default() {
+        assert_eq!(AccessMode::default(), AccessMode::Recurrent);
+    }
+
+    #[test]
+    fn test_link_status_serialization() {
+        assert_eq!(
+            serde_json::to_string(&LinkStatus::Valid).unwrap(),
+            "\"valid\""
+        );
+        assert_eq!(
+            serde_json::to_string(&LinkStatus::Invalid).unwrap(),
+            "\"invalid\""
+        );
+        assert_eq!(
+            serde_json::to_string(&LinkStatus::TokenRequired).unwrap(),
+            "\"token_required\""
+        );
+    }
+
+    #[test]
+    fn test_link_status_deserialization() {
+        assert_eq!(
+            serde_json::from_str::<LinkStatus>("\"valid\"").unwrap(),
+            LinkStatus::Valid
+        );
+        assert_eq!(
+            serde_json::from_str::<LinkStatus>("\"token_required\"").unwrap(),
+            LinkStatus::TokenRequired
+        );
+    }
+
+    #[test]
+    fn test_account_category_serialization() {
+        assert_eq!(
+            serde_json::to_string(&AccountCategory::CheckingAccount).unwrap(),
+            "\"CHECKING_ACCOUNT\""
+        );
+        assert_eq!(
+            serde_json::to_string(&AccountCategory::SavingsAccount).unwrap(),
+            "\"SAVINGS_ACCOUNT\""
+        );
+        assert_eq!(
+            serde_json::to_string(&AccountCategory::CreditCard).unwrap(),
+            "\"CREDIT_CARD\""
+        );
+    }
+
+    #[test]
+    fn test_account_category_deserialization() {
+        assert_eq!(
+            serde_json::from_str::<AccountCategory>("\"CHECKING_ACCOUNT\"").unwrap(),
+            AccountCategory::CheckingAccount
+        );
+        assert_eq!(
+            serde_json::from_str::<AccountCategory>("\"UNKNOWN_TYPE\"").unwrap(),
+            AccountCategory::Other
+        );
+    }
+
+    #[test]
+    fn test_transaction_type_serialization() {
+        assert_eq!(
+            serde_json::to_string(&TransactionType::Inflow).unwrap(),
+            "\"INFLOW\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TransactionType::Outflow).unwrap(),
+            "\"OUTFLOW\""
+        );
+    }
+
+    #[test]
+    fn test_transaction_type_deserialization() {
+        assert_eq!(
+            serde_json::from_str::<TransactionType>("\"INFLOW\"").unwrap(),
+            TransactionType::Inflow
+        );
+        assert_eq!(
+            serde_json::from_str::<TransactionType>("\"UNKNOWN\"").unwrap(),
+            TransactionType::Other
+        );
+    }
+
+    #[test]
+    fn test_transaction_status_serialization() {
+        assert_eq!(
+            serde_json::to_string(&TransactionStatus::Pending).unwrap(),
+            "\"PENDING\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TransactionStatus::Processed).unwrap(),
+            "\"PROCESSED\""
+        );
+    }
+
+    #[test]
+    fn test_webhook_event_type_deserialization() {
+        assert_eq!(
+            serde_json::from_str::<WebhookEventType>("\"link_created\"").unwrap(),
+            WebhookEventType::LinkCreated
+        );
+        assert_eq!(
+            serde_json::from_str::<WebhookEventType>("\"accounts_created\"").unwrap(),
+            WebhookEventType::AccountsCreated
+        );
+        assert_eq!(
+            serde_json::from_str::<WebhookEventType>("\"unknown_event\"").unwrap(),
+            WebhookEventType::Unknown
+        );
+    }
+
+    #[test]
+    fn test_institutions_display_name() {
+        assert_eq!(institutions::display_name("bancolombia_retail_co"), "Bancolombia");
+        assert_eq!(institutions::display_name("nequi_co"), "Nequi");
+        assert_eq!(institutions::display_name("daviplata_co"), "Daviplata");
+        assert_eq!(institutions::display_name("unknown_bank"), "Unknown Bank");
+    }
+
+    #[test]
+    fn test_institutions_constants() {
+        assert_eq!(institutions::BANCOLOMBIA, "bancolombia_retail_co");
+        assert_eq!(institutions::NEQUI, "nequi_co");
+        assert!(institutions::COLOMBIA_INSTITUTIONS.contains(&"bancolombia_retail_co"));
+        assert!(institutions::COLOMBIA_INSTITUTIONS.contains(&"nequi_co"));
+        assert!(!institutions::COLOMBIA_INSTITUTIONS.contains(&"dian_co"));
+    }
+
+    #[test]
+    fn test_link_deserialization() {
+        let json = r#"{
+            "id": "807ca75d-dc82-45d7-a6ea-b6af7e34a95f",
+            "institution": "planet_mx_employment",
+            "access_mode": "recurrent",
+            "status": "valid"
+        }"#;
+        let link: Link = serde_json::from_str(json).unwrap();
+        assert_eq!(link.institution, "planet_mx_employment");
+        assert_eq!(link.access_mode, AccessMode::Recurrent);
+        assert_eq!(link.status, LinkStatus::Valid);
+    }
+
+    #[test]
+    fn test_paginated_response_deserialization() {
+        let json = r#"{
+            "count": 2,
+            "next": null,
+            "previous": null,
+            "results": [
+                {"name": "Bank A", "type": "bank", "id": 1},
+                {"name": "Bank B", "type": "bank", "id": 2}
+            ]
+        }"#;
+        let response: PaginatedResponse<Institution> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.count, 2);
+        assert_eq!(response.results.len(), 2);
+        assert_eq!(response.results[0].name, "Bank A");
+    }
+
+    #[test]
+    fn test_widget_token_deserialization() {
+        let json = r#"{"access": "token123", "refresh": "refresh456"}"#;
+        let token: WidgetToken = serde_json::from_str(json).unwrap();
+        assert_eq!(token.access, "token123");
+        assert_eq!(token.refresh, "refresh456");
+    }
+}

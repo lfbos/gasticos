@@ -61,3 +61,102 @@ impl From<BelvoApiError> for BelvoError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_belvo_error_display() {
+        let err = BelvoError::Api {
+            code: "invalid_token".to_string(),
+            message: "Token has expired".to_string(),
+        };
+        assert_eq!(
+            err.to_string(),
+            "Belvo API error: invalid_token - Token has expired"
+        );
+    }
+
+    #[test]
+    fn test_belvo_error_authentication() {
+        let err = BelvoError::Authentication("Invalid credentials".to_string());
+        assert_eq!(err.to_string(), "Authentication failed: Invalid credentials");
+    }
+
+    #[test]
+    fn test_belvo_error_not_found() {
+        let err = BelvoError::NotFound("Link not found".to_string());
+        assert_eq!(err.to_string(), "Resource not found: Link not found");
+    }
+
+    #[test]
+    fn test_belvo_error_rate_limited() {
+        let err = BelvoError::RateLimited { retry_after: 60 };
+        assert_eq!(
+            err.to_string(),
+            "Rate limit exceeded, retry after 60 seconds"
+        );
+    }
+
+    #[test]
+    fn test_belvo_error_invalid_webhook_signature() {
+        let err = BelvoError::InvalidWebhookSignature;
+        assert_eq!(err.to_string(), "Invalid webhook signature");
+    }
+
+    #[test]
+    fn test_belvo_error_configuration() {
+        let err = BelvoError::Configuration("Missing API key".to_string());
+        assert_eq!(err.to_string(), "Configuration error: Missing API key");
+    }
+
+    #[test]
+    fn test_belvo_error_invalid_response() {
+        let err = BelvoError::InvalidResponse("Unexpected format".to_string());
+        assert_eq!(err.to_string(), "Invalid API response: Unexpected format");
+    }
+
+    #[test]
+    fn test_belvo_api_error_conversion() {
+        let api_error = BelvoApiError {
+            code: Some("auth_error".to_string()),
+            message: Some("Invalid token".to_string()),
+            request_id: Some("req123".to_string()),
+        };
+        let err: BelvoError = api_error.into();
+        match err {
+            BelvoError::Api { code, message } => {
+                assert_eq!(code, "auth_error");
+                assert_eq!(message, "Invalid token");
+            }
+            _ => panic!("Expected Api error"),
+        }
+    }
+
+    #[test]
+    fn test_belvo_api_error_conversion_with_none() {
+        let api_error = BelvoApiError {
+            code: None,
+            message: None,
+            request_id: None,
+        };
+        let err: BelvoError = api_error.into();
+        match err {
+            BelvoError::Api { code, message } => {
+                assert_eq!(code, "UNKNOWN");
+                assert_eq!(message, "Unknown error");
+            }
+            _ => panic!("Expected Api error"),
+        }
+    }
+
+    #[test]
+    fn test_belvo_api_error_deserialization() {
+        let json = r#"{"code": "invalid_link", "message": "Link not found", "request_id": "abc123"}"#;
+        let api_error: BelvoApiError = serde_json::from_str(json).unwrap();
+        assert_eq!(api_error.code, Some("invalid_link".to_string()));
+        assert_eq!(api_error.message, Some("Link not found".to_string()));
+        assert_eq!(api_error.request_id, Some("abc123".to_string()));
+    }
+}

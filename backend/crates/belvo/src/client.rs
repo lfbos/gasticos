@@ -112,6 +112,12 @@ impl BelvoClient {
         &self.base_url
     }
 
+    /// Set the base URL (for testing).
+    #[cfg(test)]
+    pub fn set_base_url(&mut self, url: String) {
+        self.base_url = url;
+    }
+
     /// Get the secret ID (for widget token).
     pub fn secret_id(&self) -> &str {
         &self.config.secret_id
@@ -269,6 +275,19 @@ impl BelvoClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wiremock::matchers::{header, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    fn create_test_client(base_url: &str) -> BelvoClient {
+        let config = BelvoConfig {
+            secret_id: "test_id".to_string(),
+            secret_password: "test_password".to_string(),
+            environment: BelvoEnvironment::Sandbox,
+        };
+        let mut client = BelvoClient::new(config).unwrap();
+        client.set_base_url(base_url.to_string());
+        client
+    }
 
     #[test]
     fn test_environment_urls() {
@@ -279,6 +298,10 @@ mod tests {
         assert_eq!(
             BelvoEnvironment::Production.base_url(),
             "https://api.belvo.com"
+        );
+        assert_eq!(
+            BelvoEnvironment::Development.base_url(),
+            "https://development.belvo.com"
         );
     }
 
@@ -292,6 +315,235 @@ mod tests {
             "PRODUCTION".parse::<BelvoEnvironment>().unwrap(),
             BelvoEnvironment::Production
         );
+        assert_eq!(
+            "Development".parse::<BelvoEnvironment>().unwrap(),
+            BelvoEnvironment::Development
+        );
         assert!("invalid".parse::<BelvoEnvironment>().is_err());
+    }
+
+    #[test]
+    fn test_environment_default() {
+        assert_eq!(BelvoEnvironment::default(), BelvoEnvironment::Sandbox);
+    }
+
+    #[test]
+    fn test_config_new() {
+        let config = BelvoConfig::new(
+            "my_id".to_string(),
+            "my_password".to_string(),
+            BelvoEnvironment::Production,
+        );
+        assert_eq!(config.secret_id, "my_id");
+        assert_eq!(config.secret_password, "my_password");
+        assert_eq!(config.environment, BelvoEnvironment::Production);
+    }
+
+    #[test]
+    fn test_client_new() {
+        let config = BelvoConfig::new(
+            "test_id".to_string(),
+            "test_password".to_string(),
+            BelvoEnvironment::Sandbox,
+        );
+        let client = BelvoClient::new(config).unwrap();
+        assert_eq!(client.base_url(), "https://sandbox.belvo.com");
+        assert_eq!(client.secret_id(), "test_id");
+        assert_eq!(client.secret_password(), "test_password");
+    }
+
+    #[test]
+    fn test_basic_auth_header() {
+        let config = BelvoConfig::new(
+            "test_id".to_string(),
+            "test_password".to_string(),
+            BelvoEnvironment::Sandbox,
+        );
+        let client = BelvoClient::new(config).unwrap();
+        let auth = client.basic_auth();
+        // "test_id:test_password" base64 encoded = "dGVzdF9pZDp0ZXN0X3Bhc3N3b3Jk"
+        assert_eq!(auth, "Basic dGVzdF9pZDp0ZXN0X3Bhc3N3b3Jk");
+    }
+
+    #[tokio::test]
+    async fn test_get_request() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/test/"))
+            .and(header("Authorization", "Basic dGVzdF9pZDp0ZXN0X3Bhc3N3b3Jk"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "data": "test"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result: Result<serde_json::Value> = client.get("/api/test/").await;
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap()["data"], "test");
+    }
+
+    #[tokio::test]
+    async fn test_post_request() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/test/"))
+            .and(header("Content-Type", "application/json"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "created": true
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let body = serde_json::json!({"name": "test"});
+        let result: Result<serde_json::Value> = client.post("/api/test/", &body).await;
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap()["created"], true);
+    }
+
+    #[tokio::test]
+    async fn test_delete_request() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/api/test/123/"))
+            .respond_with(ResponseTemplate::new(204))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.delete("/api/test/123/").await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_patch_request() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("PATCH"))
+            .and(path("/api/test/123/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "updated": true
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let body = serde_json::json!({"name": "updated"});
+        let result: Result<serde_json::Value> = client.patch("/api/test/123/", &body).await;
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap()["updated"], true);
+    }
+
+    #[tokio::test]
+    async fn test_rate_limit_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/test/"))
+            .respond_with(
+                ResponseTemplate::new(429)
+                    .insert_header("Retry-After", "120")
+            )
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result: Result<serde_json::Value> = client.get("/api/test/").await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            BelvoError::RateLimited { retry_after } => assert_eq!(retry_after, 120),
+            e => panic!("Expected RateLimited error, got {:?}", e),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_not_found_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/test/"))
+            .respond_with(ResponseTemplate::new(404))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result: Result<serde_json::Value> = client.get("/api/test/").await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            BelvoError::NotFound(_) => {}
+            e => panic!("Expected NotFound error, got {:?}", e),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_authentication_error() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/test/"))
+            .respond_with(ResponseTemplate::new(401))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result: Result<serde_json::Value> = client.get("/api/test/").await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            BelvoError::Authentication(_) => {}
+            e => panic!("Expected Authentication error, got {:?}", e),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_api_error_response() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/test/"))
+            .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+                "code": "invalid_request",
+                "message": "Bad request parameters"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result: Result<serde_json::Value> = client.get("/api/test/").await;
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            BelvoError::Api { code, message } => {
+                assert_eq!(code, "invalid_request");
+                assert_eq!(message, "Bad request parameters");
+            }
+            e => panic!("Expected Api error, got {:?}", e),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_delete_with_ok_status() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("DELETE"))
+            .and(path("/api/test/123/"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.delete("/api/test/123/").await;
+
+        assert!(result.is_ok());
     }
 }
