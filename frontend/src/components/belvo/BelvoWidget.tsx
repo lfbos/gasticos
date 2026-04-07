@@ -50,7 +50,7 @@ export function BelvoWidget({
   disabled = false,
 }: BelvoWidgetProps) {
   const { t } = useTranslation();
-  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(() => !!window.belvoSDK);
   const [isLoading, setIsLoading] = useState(false);
   const callbacksRef = useRef({ onSuccess, onExit, onError, onEvent });
 
@@ -61,10 +61,7 @@ export function BelvoWidget({
 
   // Load Belvo widget script
   useEffect(() => {
-    if (window.belvoSDK) {
-      setIsScriptLoaded(true);
-      return;
-    }
+    if (isScriptLoaded) return;
 
     const existingScript = document.querySelector(`script[src="${BELVO_WIDGET_SCRIPT}"]`);
     if (existingScript) {
@@ -81,11 +78,7 @@ export function BelvoWidget({
       onError?.({ error_code: 'SCRIPT_LOAD_ERROR', error_message: 'Failed to load widget' });
     };
     document.body.appendChild(script);
-
-    return () => {
-      // Don't remove the script on unmount - other components might need it
-    };
-  }, [onError]);
+  }, [isScriptLoaded, onError]);
 
   const handleOpenWidget = useCallback(() => {
     if (!isScriptLoaded || !accessToken || !window.belvoSDK) {

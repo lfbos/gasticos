@@ -39,12 +39,6 @@ export function useBelvo(): UseBelvoReturn {
   const [error, setError] = useState<string | null>(null);
   const [widgetToken, setWidgetToken] = useState<string | null>(null);
 
-  // Fetch connected banks on mount
-  useEffect(() => {
-    fetchConnectedBanks();
-    fetchAccounts();
-  }, []);
-
   const fetchWidgetToken = useCallback(async (): Promise<string> => {
     try {
       const response = await belvoApi.getWidgetToken();
@@ -79,6 +73,12 @@ export function useBelvo(): UseBelvoReturn {
       console.error('Failed to fetch accounts:', err);
     }
   }, []);
+
+  // Fetch connected banks on mount
+  useEffect(() => {
+    fetchConnectedBanks();
+    fetchAccounts();
+  }, [fetchConnectedBanks, fetchAccounts]);
 
   const onWidgetSuccess = useCallback(
     async (event: BelvoWidgetSuccessEvent) => {
