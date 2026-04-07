@@ -541,3 +541,188 @@ pub fn belvo_routes(cfg: &mut web::ServiceConfig) {
         .service(list_accounts)
         .service(trigger_sync);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+    use shared::models::BelvoAccountType;
+
+    fn sample_belvo_link() -> BelvoLink {
+        BelvoLink {
+            id: Uuid::new_v4(),
+            user_id: Uuid::new_v4(),
+            belvo_link_id: Uuid::new_v4(),
+            institution: "bancolombia_retail_co".to_string(),
+            institution_name: "Bancolombia".to_string(),
+            access_mode: "recurrent".to_string(),
+            status: BelvoLinkStatus::Valid,
+            last_synced_at: Some(Utc.with_ymd_and_hms(2024, 1, 15, 10, 30, 0).unwrap()),
+            created_at: Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap(),
+            updated_at: Utc.with_ymd_and_hms(2024, 1, 15, 10, 30, 0).unwrap(),
+        }
+    }
+
+    fn sample_belvo_account(link_id: Uuid) -> BelvoAccount {
+        BelvoAccount {
+            id: Uuid::new_v4(),
+            link_id,
+            belvo_account_id: Uuid::new_v4(),
+            name: Some("Cuenta de Ahorros".to_string()),
+            number_masked: Some("****1234".to_string()),
+            account_type: BelvoAccountType::Savings,
+            currency: "COP".to_string(),
+            balance_current: Some("1500000.50".parse().unwrap()),
+            balance_available: Some("1400000.00".parse().unwrap()),
+            created_at: Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap(),
+            updated_at: Utc.with_ymd_and_hms(2024, 1, 15, 10, 30, 0).unwrap(),
+        }
+    }
+
+    #[test]
+    fn test_connected_bank_response_from_link() {
+        let link = sample_belvo_link();
+        let link_id = link.id;
+        let response = ConnectedBankResponse::from(link);
+
+        assert_eq!(response.id, link_id);
+        assert_eq!(response.institution, "bancolombia_retail_co");
+        assert_eq!(response.institution_name, "Bancolombia");
+        assert_eq!(response.status, "valid");
+        assert!(response.last_synced_at.is_some());
+    }
+
+    #[test]
+    fn test_connected_bank_response_status_formatting() {
+        let mut link = sample_belvo_link();
+        link.status = BelvoLinkStatus::TokenRequired;
+        let response = ConnectedBankResponse::from(link);
+        assert_eq!(response.status, "tokenrequired");
+
+        let mut link2 = sample_belvo_link();
+        link2.status = BelvoLinkStatus::Invalid;
+        let response2 = ConnectedBankResponse::from(link2);
+        assert_eq!(response2.status, "invalid");
+    }
+
+    #[test]
+    fn test_connected_bank_response_no_last_sync() {
+        let mut link = sample_belvo_link();
+        link.last_synced_at = None;
+        let response = ConnectedBankResponse::from(link);
+        assert!(response.last_synced_at.is_none());
+    }
+
+    #[test]
+    fn test_account_response_from_account() {
+        let link_id = Uuid::new_v4();
+        let account = sample_belvo_account(link_id);
+        let account_id = account.id;
+        let response = AccountResponse::from(account);
+
+        assert_eq!(response.id, account_id);
+        assert_eq!(response.link_id, link_id);
+        assert_eq!(response.name, Some("Cuenta de Ahorros".to_string()));
+        assert_eq!(response.number_masked, Some("****1234".to_string()));
+        assert_eq!(response.account_type, "savings");
+        assert_eq!(response.currency, "COP");
+        assert!(response.balance_current.is_some());
+        assert!(response.balance_available.is_some());
+    }
+
+    #[test]
+    fn test_account_response_with_none_balances() {
+        let link_id = Uuid::new_v4();
+        let mut account = sample_belvo_account(link_id);
+        account.balance_current = None;
+        account.balance_available = None;
+        account.name = None;
+        account.number_masked = None;
+
+        let response = AccountResponse::from(account);
+
+        assert!(response.balance_current.is_none());
+        assert!(response.balance_available.is_none());
+        assert!(response.name.is_none());
+        assert!(response.number_masked.is_none());
+    }
+
+    #[test]
+    fn test_account_response_account_types() {
+        let link_id = Uuid::new_v4();
+
+        let mut account = sample_belvo_account(link_id);
+        account.account_type = BelvoAccountType::Checking;
+        let response = AccountResponse::from(account);
+        assert_eq!(response.account_type, "checking");
+
+        let mut account2 = sample_belvo_account(link_id);
+        account2.account_type = BelvoAccountType::CreditCard;
+        let response2 = AccountResponse::from(account2);
+        assert_eq!(response2.account_type, "creditcard");
+    }
+
+    #[test]
+    fn test_belvo_sync_job_payload_serialization() {
+        let payload = BelvoSyncJobPayload {
+            link_id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+            user_id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap(),
+            belvo_link_id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap(),
+        };
+
+        let json = serde_json::to_string(&payload).unwrap();
+        assert!(json.contains("550e8400-e29b-41d4-a716-446655440000"));
+        assert!(json.contains("link_id"));
+        assert!(json.contains("user_id"));
+        assert!(json.contains("belvo_link_id"));
+    }
+
+    #[test]
+    fn test_belvo_sync_job_payload_deserialization() {
+        let json = r#"{
+            "link_id": "550e8400-e29b-41d4-a716-446655440000",
+            "user_id": "550e8400-e29b-41d4-a716-446655440001",
+            "belvo_link_id": "550e8400-e29b-41d4-a716-446655440002"
+        }"#;
+
+        let payload: BelvoSyncJobPayload = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            payload.link_id,
+            Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap()
+        );
+        assert_eq!(
+            payload.user_id,
+            Uuid::parse_str("550e8400-e29b-41d4-a716-446655440001").unwrap()
+        );
+        assert_eq!(
+            payload.belvo_link_id,
+            Uuid::parse_str("550e8400-e29b-41d4-a716-446655440002").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_widget_token_response_serialization() {
+        let response = WidgetTokenResponse {
+            access_token: "test_token_123".to_string(),
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("access_token"));
+        assert!(json.contains("test_token_123"));
+    }
+
+    #[test]
+    fn test_create_link_request_deserialization() {
+        let json = r#"{
+            "link_id": "550e8400-e29b-41d4-a716-446655440000",
+            "institution": "bancolombia_retail_co"
+        }"#;
+
+        let request: CreateLinkRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            request.link_id,
+            Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap()
+        );
+        assert_eq!(request.institution, "bancolombia_retail_co");
+    }
+}
