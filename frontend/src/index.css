@@ -115,10 +115,16 @@
 }
 
 @layer base {
-  * {
+  *:not(#belvo):not(#belvo *) {
     @apply border-border outline-ring/50;
     }
   body {
     @apply bg-background text-foreground;
     }
+}
+
+/* Ensure Belvo widget is not affected by app styles */
+#belvo,
+#belvo * {
+  all: revert;
 }

@@ -3,9 +3,9 @@ resolver = "2"
 members = [
     "crates/api",
     "crates/worker",
-    "crates/parser",
     "crates/categorizer",
     "crates/shared",
+    "crates/belvo",
 ]
 
 [workspace.package]
