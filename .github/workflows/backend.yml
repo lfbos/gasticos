@@ -60,8 +60,19 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/gasticos_test
+      REDIS_URL: redis://localhost:6379
       JWT_SECRET: test_secret_key_that_is_at_least_32_characters_long_for_ci
 
     steps:
