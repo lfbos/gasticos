@@ -218,4 +218,54 @@ mod tests {
 
         assert!(result.is_err());
     }
+
+    #[tokio::test]
+    async fn test_update_link() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+
+        Mock::given(method("PATCH"))
+            .and(path_regex(r"/api/links/[a-f0-9-]+/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": link_id.to_string(),
+                "institution": "bancolombia_retail_co",
+                "access_mode": "recurrent",
+                "status": "valid"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .update_link(link_id, "new_password", None, None)
+            .await;
+
+        assert!(result.is_ok());
+        let link = result.unwrap();
+        assert_eq!(link.id, link_id);
+    }
+
+    #[tokio::test]
+    async fn test_update_link_with_password2_and_token() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+
+        Mock::given(method("PATCH"))
+            .and(path_regex(r"/api/links/[a-f0-9-]+/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": link_id.to_string(),
+                "institution": "bancolombia_retail_co",
+                "access_mode": "recurrent",
+                "status": "valid"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .update_link(link_id, "password", Some("password2"), Some("otp_token"))
+            .await;
+
+        assert!(result.is_ok());
+    }
 }

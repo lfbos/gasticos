@@ -209,4 +209,116 @@ mod tests {
 
         assert!(result.is_ok());
     }
+
+    #[tokio::test]
+    async fn test_list_accounts_with_page() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/accounts/"))
+            .and(query_param("page", "2"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 10,
+                "next": null,
+                "previous": null,
+                "results": []
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.list_accounts(Some(2), None, None).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_list_accounts_with_page_size() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/accounts/"))
+            .and(query_param("page_size", "50"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.list_accounts(None, Some(50), None).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_list_accounts_with_link_id() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+
+        Mock::given(method("GET"))
+            .and(path("/api/accounts/"))
+            .and(query_param("link", link_id.to_string().as_str()))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.list_accounts(None, None, Some(link_id)).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_list_accounts_with_all_params() {
+        let mock_server = MockServer::start().await;
+        let link_id = Uuid::new_v4();
+
+        Mock::given(method("GET"))
+            .and(path("/api/accounts/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 5,
+                "next": null,
+                "previous": null,
+                "results": []
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client.list_accounts(Some(1), Some(10), Some(link_id)).await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_list_accounts_page_size_capped_at_100() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("GET"))
+            .and(path("/api/accounts/"))
+            .and(query_param("page_size", "100"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "count": 0,
+                "next": null,
+                "previous": null,
+                "results": []
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        // Should cap at 100 even if we pass 200
+        let result = client.list_accounts(None, Some(200), None).await;
+
+        assert!(result.is_ok());
+    }
 }

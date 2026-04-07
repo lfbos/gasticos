@@ -203,4 +203,55 @@ mod tests {
 
         assert!(result.is_err());
     }
+
+    #[tokio::test]
+    async fn test_create_widget_token_with_callbacks() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/token/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access": "callback_access_token",
+                "refresh": "callback_refresh_token"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .create_widget_token_with_config(
+                None,
+                None,
+                None,
+                Some("https://example.com/success"),
+                Some("https://example.com/exit"),
+                Some("https://example.com/event"),
+            )
+            .await;
+
+        assert!(result.is_ok());
+        let token = result.unwrap();
+        assert_eq!(token.access, "callback_access_token");
+    }
+
+    #[tokio::test]
+    async fn test_create_widget_token_empty_config() {
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/token/"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access": "empty_config_token",
+                "refresh": "empty_config_refresh"
+            })))
+            .mount(&mock_server)
+            .await;
+
+        let client = create_test_client(&mock_server.uri());
+        let result = client
+            .create_widget_token_with_config(None, None, None, None, None, None)
+            .await;
+
+        assert!(result.is_ok());
+    }
 }

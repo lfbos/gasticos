@@ -6,10 +6,15 @@ use tracing_subscriber::EnvFilter;
 
 mod jobs;
 
-use jobs::{process_belvo_sync_job, BelvoSyncJobPayload};
+use jobs::{
+    process_belvo_sync_job, process_categorize_job, BelvoSyncJobPayload, CategorizeJobPayload,
+};
 
 /// Redis queue name for Belvo sync jobs
 const BELVO_SYNC_QUEUE: &str = "gasticos:jobs:belvo_sync";
+
+/// Redis queue name for categorization jobs
+const CATEGORIZE_QUEUE: &str = "gasticos:jobs:categorize";
 
 /// Job processing timeout in seconds
 const JOB_TIMEOUT: u64 = 300;
@@ -56,7 +61,7 @@ async fn run_consumer_loop(
     let mut redis_conn = redis_client.get_multiplexed_async_connection().await?;
 
     // List of queues to monitor
-    let queues = vec![BELVO_SYNC_QUEUE];
+    let queues = vec![BELVO_SYNC_QUEUE, CATEGORIZE_QUEUE];
 
     loop {
         // Use BLPOP for blocking pop with timeout on multiple queues
@@ -86,6 +91,9 @@ async fn run_consumer_loop(
             match queue.as_str() {
                 q if q == BELVO_SYNC_QUEUE => {
                     process_belvo_sync_queue_job(&job_data, &mut conn, &belvo_client).await;
+                }
+                q if q == CATEGORIZE_QUEUE => {
+                    process_categorize_queue_job(&job_data, &mut conn).await;
                 }
                 _ => {
                     error!("Unknown queue: {}", queue);
@@ -131,6 +139,45 @@ async fn process_belvo_sync_queue_job(
         Err(e) => {
             error!(
                 "Failed to parse Belvo sync job payload: {}. Data: {}",
+                e, job_data
+            );
+        }
+    }
+}
+
+/// Process a job from the categorization queue.
+async fn process_categorize_queue_job(job_data: &str, conn: &mut diesel_async::AsyncPgConnection) {
+    match serde_json::from_str::<CategorizeJobPayload>(job_data) {
+        Ok(payload) => {
+            let user_id = payload.user_id;
+            let job_future = process_categorize_job(payload, conn);
+
+            match tokio::time::timeout(std::time::Duration::from_secs(JOB_TIMEOUT), job_future)
+                .await
+            {
+                Ok(Ok(result)) => {
+                    info!(
+                        "Successfully processed categorization job for user {}: {}/{} categorized",
+                        user_id, result.categorized, result.total_processed
+                    );
+                }
+                Ok(Err(e)) => {
+                    error!(
+                        "Failed to process categorization job for user {}: {}",
+                        user_id, e
+                    );
+                }
+                Err(_) => {
+                    error!(
+                        "Categorization job timed out for user {} after {} seconds",
+                        user_id, JOB_TIMEOUT
+                    );
+                }
+            }
+        }
+        Err(e) => {
+            error!(
+                "Failed to parse categorization job payload: {}. Data: {}",
                 e, job_data
             );
         }
