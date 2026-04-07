@@ -3,14 +3,14 @@
  * DOM-free for React Native reuse.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { belvoApi } from '@/api/belvo';
-import { getApiErrorMessage } from '@/api/client';
+import { useCallback, useEffect, useState } from "react";
+import { belvoApi } from "@/api/belvo";
+import { getApiErrorMessage } from "@/api/client";
 import type {
   BelvoAccount,
   BelvoWidgetSuccessEvent,
   ConnectedBank,
-} from '@/types/belvo';
+} from "@/types/belvo";
 
 interface UseBelvoReturn {
   // State
@@ -70,7 +70,7 @@ export function useBelvo(): UseBelvoReturn {
       setAccounts(accountsList);
     } catch (err) {
       // Don't set error for accounts - they might not exist yet
-      console.error('Failed to fetch accounts:', err);
+      console.error("Failed to fetch accounts:", err);
     }
   }, []);
 
@@ -108,7 +108,7 @@ export function useBelvo(): UseBelvoReturn {
         setIsLoading(false);
       }
     },
-    [fetchAccounts, fetchWidgetToken]
+    [fetchAccounts, fetchWidgetToken],
   );
 
   const disconnectBank = useCallback(async (linkId: string) => {
@@ -127,22 +127,25 @@ export function useBelvo(): UseBelvoReturn {
     }
   }, []);
 
-  const syncBank = useCallback(async (linkId: string) => {
-    setIsSyncing((prev) => ({ ...prev, [linkId]: true }));
-    setError(null);
-    try {
-      await belvoApi.triggerSync(linkId);
-      // Update the bank's last_synced_at after a delay
-      setTimeout(() => {
-        fetchConnectedBanks();
-        fetchAccounts();
-      }, 3000);
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-    } finally {
-      setIsSyncing((prev) => ({ ...prev, [linkId]: false }));
-    }
-  }, [fetchConnectedBanks, fetchAccounts]);
+  const syncBank = useCallback(
+    async (linkId: string) => {
+      setIsSyncing((prev) => ({ ...prev, [linkId]: true }));
+      setError(null);
+      try {
+        await belvoApi.triggerSync(linkId);
+        // Update the bank's last_synced_at after a delay
+        setTimeout(() => {
+          fetchConnectedBanks();
+          fetchAccounts();
+        }, 3000);
+      } catch (err) {
+        setError(getApiErrorMessage(err));
+      } finally {
+        setIsSyncing((prev) => ({ ...prev, [linkId]: false }));
+      }
+    },
+    [fetchConnectedBanks, fetchAccounts],
+  );
 
   const clearError = useCallback(() => {
     setError(null);

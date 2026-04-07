@@ -2,8 +2,8 @@
  * Token storage utilities for localStorage.
  */
 
-const ACCESS_TOKEN_KEY = 'gasticos_access_token';
-const REFRESH_TOKEN_KEY = 'gasticos_refresh_token';
+const ACCESS_TOKEN_KEY = "gasticos_access_token";
+const REFRESH_TOKEN_KEY = "gasticos_refresh_token";
 
 export const storage = {
   getAccessToken: (): string | null => {

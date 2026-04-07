@@ -2,15 +2,21 @@
  * Connect page for bank connections via Belvo Open Banking.
  */
 
-import { useCallback, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BelvoWidget, ConnectedBanks } from '@/components/belvo';
-import { useAuth, useBelvo } from '@/hooks';
-import type { BelvoWidgetSuccessEvent } from '@/types';
+import { useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { BelvoWidget, ConnectedBanks } from "@/components/belvo";
+import { useAuth, useBelvo } from "@/hooks";
+import type { BelvoWidgetSuccessEvent } from "@/types";
 
 export function ConnectPage() {
   const { t } = useTranslation();
@@ -48,7 +54,7 @@ export function ConnectPage() {
         // Error is handled by the hook
       }
     },
-    [onWidgetSuccess]
+    [onWidgetSuccess],
   );
 
   return (
@@ -60,14 +66,14 @@ export function ConnectPage() {
             Gasticos
           </h1>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-              {t('dashboard.title')}
+            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+              {t("dashboard.title")}
             </Button>
             <span className="text-sm text-gray-600">
-              {t('auth.greeting', { name: user?.name })}
+              {t("auth.greeting", { name: user?.name })}
             </span>
             <Button variant="outline" onClick={logout}>
-              {t('auth.logout')}
+              {t("auth.logout")}
             </Button>
           </div>
         </div>
@@ -76,8 +82,12 @@ export function ConnectPage() {
       {/* Main content */}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">{t('connect.title')}</h2>
-          <p className="mt-1 text-sm text-gray-600">{t('belvo.connectBankDescription')}</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {t("connect.title")}
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">
+            {t("belvo.connectBankDescription")}
+          </p>
         </div>
 
         {/* Error display */}
@@ -102,8 +112,10 @@ export function ConnectPage() {
           {/* Connect new bank */}
           <Card>
             <CardHeader>
-              <CardTitle>{t('belvo.connectNewBank')}</CardTitle>
-              <CardDescription>{t('belvo.connectNewBankDescription')}</CardDescription>
+              <CardTitle>{t("belvo.connectNewBank")}</CardTitle>
+              <CardDescription>
+                {t("belvo.connectNewBankDescription")}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {widgetToken ? (
@@ -114,7 +126,7 @@ export function ConnectPage() {
                 />
               ) : (
                 <Button disabled className="w-full" size="lg">
-                  {t('belvo.loadingWidget')}
+                  {t("belvo.loadingWidget")}
                 </Button>
               )}
             </CardContent>

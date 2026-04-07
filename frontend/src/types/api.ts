@@ -27,11 +27,11 @@ export interface PaginatedResponse<T> {
  * Known API error codes from the backend.
  */
 export type ApiErrorCode =
-  | 'INVALID_CREDENTIALS'
-  | 'EMAIL_EXISTS'
-  | 'TOKEN_EXPIRED'
-  | 'TOKEN_INVALID'
-  | 'BAD_REQUEST'
-  | 'UNAUTHORIZED'
-  | 'NOT_FOUND'
-  | 'INTERNAL_ERROR';
+  | "INVALID_CREDENTIALS"
+  | "EMAIL_EXISTS"
+  | "TOKEN_EXPIRED"
+  | "TOKEN_INVALID"
+  | "BAD_REQUEST"
+  | "UNAUTHORIZED"
+  | "NOT_FOUND"
+  | "INTERNAL_ERROR";

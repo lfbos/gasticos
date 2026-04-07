@@ -2,16 +2,16 @@
  * Axios client with auth interceptors and token refresh.
  */
 
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { storage } from '@/lib/storage';
-import type { ApiError, AuthResponse } from '@/types';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { storage } from "@/lib/storage";
+import type { ApiError, AuthResponse } from "@/types";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export const apiClient = axios.create({
   baseURL: `${API_URL}/api/v1`,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -42,7 +42,7 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor: handle 401 and refresh token
@@ -57,9 +57,9 @@ apiClient.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes('/auth/login') &&
-      !originalRequest.url?.includes('/auth/register') &&
-      !originalRequest.url?.includes('/auth/refresh')
+      !originalRequest.url?.includes("/auth/login") &&
+      !originalRequest.url?.includes("/auth/register") &&
+      !originalRequest.url?.includes("/auth/refresh")
     ) {
       if (isRefreshing) {
         // Wait for the ongoing refresh to complete
@@ -82,7 +82,7 @@ apiClient.interceptors.response.use(
       const refreshToken = storage.getRefreshToken();
       if (!refreshToken) {
         storage.clearTokens();
-        window.location.href = '/login';
+        window.location.href = "/login";
         return Promise.reject(error);
       }
 
@@ -90,7 +90,7 @@ apiClient.interceptors.response.use(
         const response = await axios.post<AuthResponse>(
           `${API_URL}/api/v1/auth/refresh`,
           { refresh_token: refreshToken },
-          { headers: { 'Content-Type': 'application/json' } }
+          { headers: { "Content-Type": "application/json" } },
         );
 
         const { access_token, refresh_token } = response.data;
@@ -105,7 +105,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         storage.clearTokens();
-        window.location.href = '/login';
+        window.location.href = "/login";
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -113,7 +113,7 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 /**
@@ -125,9 +125,9 @@ export const getApiErrorMessage = (error: unknown): string => {
     if (apiError?.error?.message) {
       return apiError.error.message;
     }
-    if (error.message === 'Network Error') {
-      return 'Error de conexión. Intenta de nuevo.';
+    if (error.message === "Network Error") {
+      return "Error de conexión. Intenta de nuevo.";
     }
   }
-  return 'Ha ocurrido un error. Intenta de nuevo.';
+  return "Ha ocurrido un error. Intenta de nuevo.";
 };

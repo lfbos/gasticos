@@ -4,13 +4,26 @@
  * Displays a list of banks connected via Belvo with sync status.
  */
 
-import { useTranslation } from 'react-i18next';
-import { Building2, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { BelvoAccount, ConnectedBank } from '@/types/belvo';
-import { getBankDisplayName } from '@/types/belvo';
-import { formatCurrency } from '@/lib/format';
+import { useTranslation } from "react-i18next";
+import {
+  Building2,
+  RefreshCw,
+  Trash2,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import type { BelvoAccount, ConnectedBank } from "@/types/belvo";
+import { getBankDisplayName } from "@/types/belvo";
+import { formatCurrency } from "@/lib/format";
 
 interface ConnectedBanksProps {
   banks: ConnectedBank[];
@@ -35,7 +48,7 @@ export function ConnectedBanks({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t('belvo.connectedBanks')}</CardTitle>
+          <CardTitle>{t("belvo.connectedBanks")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
@@ -50,13 +63,15 @@ export function ConnectedBanks({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t('belvo.connectedBanks')}</CardTitle>
-          <CardDescription>{t('belvo.noConnectedBanks')}</CardDescription>
+          <CardTitle>{t("belvo.connectedBanks")}</CardTitle>
+          <CardDescription>{t("belvo.noConnectedBanks")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-sm text-muted-foreground">{t('belvo.connectBankDescription')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("belvo.connectBankDescription")}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -66,17 +81,19 @@ export function ConnectedBanks({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('belvo.connectedBanks')}</CardTitle>
+        <CardTitle>{t("belvo.connectedBanks")}</CardTitle>
         <CardDescription>
-          {t('belvo.connectedBanksCount', { count: banks.length })}
+          {t("belvo.connectedBanksCount", { count: banks.length })}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {banks.map((bank) => {
-          const bankAccounts = accounts.filter((acc) => acc.link_id === bank.id);
+          const bankAccounts = accounts.filter(
+            (acc) => acc.link_id === bank.id,
+          );
           const totalBalance = bankAccounts.reduce(
             (sum, acc) => sum + (acc.balance_current ?? 0),
-            0
+            0,
           );
 
           return (
@@ -88,7 +105,8 @@ export function ConnectedBanks({
                 <div className="flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-primary" />
                   <h4 className="font-medium">
-                    {bank.institution_name || getBankDisplayName(bank.institution)}
+                    {bank.institution_name ||
+                      getBankDisplayName(bank.institution)}
                   </h4>
                   <StatusBadge status={bank.status} />
                 </div>
@@ -101,8 +119,10 @@ export function ConnectedBanks({
                         className="flex items-center justify-between text-sm text-muted-foreground"
                       >
                         <span>
-                          {account.name || t('belvo.accountTypes.' + account.account_type)}
-                          {account.number_masked && ` (${account.number_masked})`}
+                          {account.name ||
+                            t("belvo.accountTypes." + account.account_type)}
+                          {account.number_masked &&
+                            ` (${account.number_masked})`}
                         </span>
                         <span className="font-mono">
                           {formatCurrency(account.balance_current ?? 0)}
@@ -110,15 +130,18 @@ export function ConnectedBanks({
                       </div>
                     ))}
                     <div className="flex items-center justify-between text-sm font-medium pt-2 border-t">
-                      <span>{t('belvo.totalBalance')}</span>
-                      <span className="font-mono">{formatCurrency(totalBalance)}</span>
+                      <span>{t("belvo.totalBalance")}</span>
+                      <span className="font-mono">
+                        {formatCurrency(totalBalance)}
+                      </span>
                     </div>
                   </div>
                 )}
 
                 {bank.last_synced_at && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    {t('belvo.lastSync')}: {formatRelativeTime(bank.last_synced_at)}
+                    {t("belvo.lastSync")}:{" "}
+                    {formatRelativeTime(bank.last_synced_at)}
                   </p>
                 )}
               </div>
@@ -128,18 +151,18 @@ export function ConnectedBanks({
                   variant="outline"
                   size="icon"
                   onClick={() => onSync(bank.id)}
-                  disabled={isSyncing[bank.id] || bank.status !== 'valid'}
-                  title={t('belvo.sync')}
+                  disabled={isSyncing[bank.id] || bank.status !== "valid"}
+                  title={t("belvo.sync")}
                 >
                   <RefreshCw
-                    className={`h-4 w-4 ${isSyncing[bank.id] ? 'animate-spin' : ''}`}
+                    className={`h-4 w-4 ${isSyncing[bank.id] ? "animate-spin" : ""}`}
                   />
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => onDisconnect(bank.id)}
-                  title={t('belvo.disconnect')}
+                  title={t("belvo.disconnect")}
                   className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -159,27 +182,27 @@ function StatusBadge({ status }: { status: string }) {
   const config = {
     valid: {
       icon: CheckCircle,
-      className: 'text-green-600 bg-green-100',
-      label: t('belvo.status.valid'),
+      className: "text-green-600 bg-green-100",
+      label: t("belvo.status.valid"),
     },
     invalid: {
       icon: AlertCircle,
-      className: 'text-red-600 bg-red-100',
-      label: t('belvo.status.invalid'),
+      className: "text-red-600 bg-red-100",
+      label: t("belvo.status.invalid"),
     },
     token_required: {
       icon: AlertCircle,
-      className: 'text-yellow-600 bg-yellow-100',
-      label: t('belvo.status.tokenRequired'),
+      className: "text-yellow-600 bg-yellow-100",
+      label: t("belvo.status.tokenRequired"),
     },
     unconfirmed: {
       icon: Clock,
-      className: 'text-blue-600 bg-blue-100',
-      label: t('belvo.status.unconfirmed'),
+      className: "text-blue-600 bg-blue-100",
+      label: t("belvo.status.unconfirmed"),
     },
   }[status] ?? {
     icon: Clock,
-    className: 'text-gray-600 bg-gray-100',
+    className: "text-gray-600 bg-gray-100",
     label: status,
   };
 
@@ -203,13 +226,13 @@ function formatRelativeTime(dateString: string): string {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffMins < 1) return 'justo ahora';
+  if (diffMins < 1) return "justo ahora";
   if (diffMins < 60) return `hace ${diffMins} min`;
   if (diffHours < 24) return `hace ${diffHours} h`;
   if (diffDays < 7) return `hace ${diffDays} d`;
 
-  return date.toLocaleDateString('es-CO', {
-    day: 'numeric',
-    month: 'short',
+  return date.toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "short",
   });
 }

@@ -3,10 +3,10 @@
  * DOM-free for React Native reuse.
  */
 
-import { useCallback, useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import { authApi, getApiErrorMessage } from '@/api';
-import type { LoginRequest, RegisterRequest, User } from '@/types';
+import { useCallback, useEffect } from "react";
+import { useAuthStore } from "@/stores/authStore";
+import { authApi, getApiErrorMessage } from "@/api";
+import type { LoginRequest, RegisterRequest, User } from "@/types";
 
 interface UseAuthReturn {
   user: User | null;
@@ -54,7 +54,7 @@ export function useAuth(): UseAuthReturn {
         throw new Error(getApiErrorMessage(error));
       }
     },
-    [setAuth]
+    [setAuth],
   );
 
   const register = useCallback(
@@ -66,7 +66,7 @@ export function useAuth(): UseAuthReturn {
         throw new Error(getApiErrorMessage(error));
       }
     },
-    [setAuth]
+    [setAuth],
   );
 
   const logout = useCallback(async () => {

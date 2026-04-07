@@ -2,8 +2,8 @@
  * Route guard component that redirects to login if not authenticated.
  */
 
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks';
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

@@ -64,7 +64,8 @@ impl BelvoConfig {
         let secret_password = std::env::var("BELVO_SECRET_PASSWORD")
             .map_err(|_| BelvoError::Configuration("BELVO_SECRET_PASSWORD not set".to_string()))?;
         let env_str = std::env::var("BELVO_ENV").unwrap_or_else(|_| "sandbox".to_string());
-        let environment = env_str.parse::<BelvoEnvironment>()
+        let environment = env_str
+            .parse::<BelvoEnvironment>()
             .map_err(|_| BelvoError::Configuration(format!("Invalid BELVO_ENV: {}", env_str)))?;
 
         Ok(Self {

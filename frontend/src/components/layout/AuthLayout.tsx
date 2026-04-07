@@ -2,7 +2,7 @@
  * Layout for authentication pages (login, register).
  */
 
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface AuthLayoutProps {
   children: ReactNode;

@@ -5,17 +5,21 @@
 /**
  * Status of a bank connection.
  */
-export type BelvoLinkStatus = 'valid' | 'invalid' | 'token_required' | 'unconfirmed';
+export type BelvoLinkStatus =
+  | "valid"
+  | "invalid"
+  | "token_required"
+  | "unconfirmed";
 
 /**
  * Belvo-supported Colombian bank institution codes.
  */
 export type BelvoInstitution =
-  | 'bancolombia_retail_co'
-  | 'nequi_co'
-  | 'daviplata_co'
-  | 'nubank_co'
-  | 'davivienda_retail_co';
+  | "bancolombia_retail_co"
+  | "nequi_co"
+  | "daviplata_co"
+  | "nubank_co"
+  | "davivienda_retail_co";
 
 /**
  * Bank information for the institution selector.
@@ -48,7 +52,12 @@ export interface ConnectedBank {
 /**
  * Account type from Belvo.
  */
-export type BelvoAccountType = 'checking' | 'savings' | 'credit_card' | 'loan' | 'other';
+export type BelvoAccountType =
+  | "checking"
+  | "savings"
+  | "credit_card"
+  | "loan"
+  | "other";
 
 /**
  * Bank account from Belvo.
@@ -76,7 +85,7 @@ export interface CreateLinkRequest {
  * Sync status response.
  */
 export interface SyncStatusResponse {
-  status: 'sync_queued';
+  status: "sync_queued";
   link_id: string;
 }
 
@@ -84,11 +93,11 @@ export interface SyncStatusResponse {
  * List of supported Colombian banks for Belvo.
  */
 export const BELVO_SUPPORTED_BANKS: BelvoBank[] = [
-  { code: 'bancolombia_retail_co', name: 'Bancolombia', color: '#FFDD00' },
-  { code: 'nequi_co', name: 'Nequi', color: '#E2007A' },
-  { code: 'daviplata_co', name: 'Daviplata', color: '#ED1C24' },
-  { code: 'nubank_co', name: 'Nu Colombia', color: '#820AD1' },
-  { code: 'davivienda_retail_co', name: 'Davivienda', color: '#ED1C24' },
+  { code: "bancolombia_retail_co", name: "Bancolombia", color: "#FFDD00" },
+  { code: "nequi_co", name: "Nequi", color: "#E2007A" },
+  { code: "daviplata_co", name: "Daviplata", color: "#ED1C24" },
+  { code: "nubank_co", name: "Nu Colombia", color: "#820AD1" },
+  { code: "davivienda_retail_co", name: "Davivienda", color: "#ED1C24" },
 ];
 
 /**
