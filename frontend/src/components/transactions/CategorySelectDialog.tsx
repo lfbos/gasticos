@@ -14,7 +14,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { CategoryList } from "@/components/categories";
 import type { Transaction, Category } from "@/types";
-import { formatTransactionAmount, formatTransactionDate } from "@/types/transaction";
+import {
+  formatTransactionAmount,
+  formatTransactionDate,
+} from "@/types/transaction";
 
 interface CategorySelectDialogProps {
   transaction: Transaction | null;
@@ -34,11 +37,15 @@ export function CategorySelectDialog({
   onSelectCategory,
 }: CategorySelectDialogProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    transaction?.category_id ?? null
+    transaction?.category_id ?? null,
   );
 
   // Reset selection when transaction changes
-  if (transaction && selectedCategoryId !== transaction.category_id && !isUpdating) {
+  if (
+    transaction &&
+    selectedCategoryId !== transaction.category_id &&
+    !isUpdating
+  ) {
     setSelectedCategoryId(transaction.category_id);
   }
 
@@ -115,7 +122,9 @@ export function CategorySelectDialog({
             </Button>
             <Button
               onClick={handleSave}
-              disabled={isUpdating || selectedCategoryId === transaction.category_id}
+              disabled={
+                isUpdating || selectedCategoryId === transaction.category_id
+              }
             >
               {isUpdating ? "Guardando..." : "Guardar"}
             </Button>

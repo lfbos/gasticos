@@ -73,7 +73,7 @@ export function TransactionFilters({
   };
 
   const handleUncategorizedChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     onFiltersChange({
       ...filters,
