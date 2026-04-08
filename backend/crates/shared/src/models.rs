@@ -137,6 +137,7 @@ pub struct Transaction {
     pub created_at: DateTime<Utc>,
     pub belvo_transaction_id: Option<Uuid>,
     pub belvo_account_id: Option<Uuid>,
+    pub sequence: i32,
 }
 
 /// New transaction for inserting into database
@@ -154,6 +155,7 @@ pub struct NewTransaction {
     pub is_income: bool,
     pub belvo_transaction_id: Option<Uuid>,
     pub belvo_account_id: Option<Uuid>,
+    pub sequence: i32,
 }
 
 // ============================================================================

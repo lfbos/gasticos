@@ -9,6 +9,52 @@ import { getApiErrorMessage } from "@/api/client";
 import type { PaginationMeta } from "@/types/api";
 import type { Transaction, ListTransactionsParams } from "@/types/transaction";
 
+// ============================================================================
+// useBanks Hook
+// ============================================================================
+
+interface UseBanksReturn {
+  banks: string[];
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+}
+
+export function useBanks(): UseBanksReturn {
+  const [banks, setBanks] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchBanks = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await transactionsApi.getBanks();
+      setBanks(response.banks);
+    } catch (err) {
+      const message = getApiErrorMessage(err);
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBanks();
+  }, [fetchBanks]);
+
+  return {
+    banks,
+    isLoading,
+    error,
+    refetch: fetchBanks,
+  };
+}
+
+// ============================================================================
+// useTransactions Hook
+// ============================================================================
+
 interface UseTransactionsReturn {
   // State
   transactions: Transaction[];

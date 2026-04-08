@@ -5,15 +5,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Building2 } from "lucide-react";
+import { Building2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth, useCategories, useTransactions } from "@/hooks";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth, useBanks, useCategories, useTransactions } from "@/hooks";
 import {
   TransactionList,
   TransactionFilters,
   CategorySelectDialog,
 } from "@/components/transactions";
+import { PdfUpload } from "@/components/upload";
 import type { Transaction } from "@/types";
 
 export function DashboardPage() {
@@ -31,10 +33,14 @@ export function DashboardPage() {
     setFilters,
     goToPage,
     updateTransactionCategory,
+    fetchTransactions,
   } = useTransactions();
 
   // Categories state
   const { categories, isLoading: isLoadingCategories } = useCategories();
+
+  // Banks state
+  const { banks, refetch: refetchBanks } = useBanks();
 
   // Category edit dialog state
   const [selectedTransaction, setSelectedTransaction] =
@@ -86,17 +92,39 @@ export function DashboardPage() {
 
       <main>
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
-          {/* Connect bank card */}
+          {/* Import data card */}
           <Card>
             <CardHeader>
-              <CardTitle>{t("connect.title")}</CardTitle>
+              <CardTitle>Importar datos</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">{t("connect.description")}</p>
-              <Button className="mt-4" onClick={() => navigate("/connect")}>
-                <Building2 className="mr-2 h-4 w-4" />
-                {t("belvo.connectBank")}
-              </Button>
+              <Tabs defaultValue="pdf" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="pdf">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Subir PDF
+                  </TabsTrigger>
+                  <TabsTrigger value="bank">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Conectar banco
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="pdf" className="mt-4">
+                  <PdfUpload
+                    onUploadComplete={() => {
+                      fetchTransactions();
+                      refetchBanks();
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value="bank" className="mt-4">
+                  <p className="text-gray-600">{t("connect.description")}</p>
+                  <Button className="mt-4" onClick={() => navigate("/connect")}>
+                    <Building2 className="mr-2 h-4 w-4" />
+                    {t("belvo.connectBank")}
+                  </Button>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
@@ -109,6 +137,7 @@ export function DashboardPage() {
               {/* Filters */}
               <TransactionFilters
                 categories={categories}
+                banks={banks}
                 filters={filters}
                 onFiltersChange={setFilters}
               />
@@ -120,6 +149,8 @@ export function DashboardPage() {
                 isLoading={isLoading}
                 onCategoryClick={handleCategoryClick}
                 onPageChange={goToPage}
+                sortOrder={filters.sort_order ?? "desc"}
+                onSortChange={(order) => setFilters({ sort_order: order })}
               />
             </CardContent>
           </Card>

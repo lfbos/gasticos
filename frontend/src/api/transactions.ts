@@ -8,6 +8,7 @@ import type {
   PaginatedTransactionsResponse,
   ListTransactionsParams,
   UpdateTransactionCategoryRequest,
+  BanksResponse,
 } from "@/types/transaction";
 
 /**
@@ -22,8 +23,8 @@ function buildQueryString(params: ListTransactionsParams): string {
   if (params.per_page !== undefined) {
     searchParams.set("per_page", params.per_page.toString());
   }
-  if (params.category_id) {
-    searchParams.set("category_id", params.category_id);
+  if (params.category_ids && params.category_ids.length > 0) {
+    searchParams.set("category_ids", params.category_ids.join(","));
   }
   if (params.date_from) {
     searchParams.set("date_from", params.date_from);
@@ -37,8 +38,11 @@ function buildQueryString(params: ListTransactionsParams): string {
   if (params.search) {
     searchParams.set("search", params.search);
   }
-  if (params.uncategorized !== undefined) {
-    searchParams.set("uncategorized", params.uncategorized.toString());
+  if (params.sort_order) {
+    searchParams.set("sort_order", params.sort_order);
+  }
+  if (params.bank) {
+    searchParams.set("bank", params.bank);
   }
 
   const queryString = searchParams.toString();
@@ -80,8 +84,17 @@ async function updateTransactionCategory(
   return response.data;
 }
 
+/**
+ * Get list of banks for the current user.
+ */
+async function getBanks(): Promise<BanksResponse> {
+  const response = await apiClient.get<BanksResponse>("/transactions/banks");
+  return response.data;
+}
+
 export const transactionsApi = {
   getTransactions,
   getTransaction,
   updateTransactionCategory,
+  getBanks,
 };

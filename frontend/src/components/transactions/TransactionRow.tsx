@@ -41,9 +41,14 @@ export function TransactionRow({
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{formattedDate}</TableCell>
-      <TableCell className="max-w-xs truncate" title={transaction.description}>
+      <TableCell className="font-medium whitespace-nowrap">
+        {formattedDate}
+      </TableCell>
+      <TableCell className="truncate max-w-0" title={transaction.description}>
         {transaction.description}
+      </TableCell>
+      <TableCell className="text-sm text-gray-600 whitespace-nowrap">
+        {transaction.bank ?? "-"}
       </TableCell>
       <TableCell>
         {category ? (

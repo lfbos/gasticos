@@ -18,6 +18,7 @@ export type SystemCategoryKey =
   | "financial"
   | "technology"
   | "subscriptions"
+  | "transfers"
   | "other";
 
 /**
@@ -81,6 +82,7 @@ export const CATEGORY_NAMES_ES: Record<SystemCategoryKey, string> = {
   financial: "Financiero",
   technology: "Tecnología",
   subscriptions: "Suscripciones",
+  transfers: "Transferencias",
   other: "Otros",
 };
 
@@ -99,6 +101,7 @@ export const CATEGORY_ICONS: Record<SystemCategoryKey, string> = {
   financial: "landmark",
   technology: "laptop",
   subscriptions: "repeat",
+  transfers: "arrow-right-left",
   other: "circle-dot",
 };
 
@@ -117,6 +120,7 @@ export const CATEGORY_COLORS: Record<SystemCategoryKey, string> = {
   financial: "#14B8A6",
   technology: "#6B7280",
   subscriptions: "#8B5CF6",
+  transfers: "#A855F7",
   other: "#9CA3AF",
 };
 

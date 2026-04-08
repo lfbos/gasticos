@@ -2,6 +2,7 @@
  * TransactionList component for displaying paginated transactions.
  */
 
+import { useState, useCallback, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
 import { TransactionRow } from "./TransactionRow";
 import type { Transaction, PaginationMeta } from "@/types";
 
@@ -21,6 +22,8 @@ interface TransactionListProps {
   isLoading?: boolean;
   onCategoryClick?: (transaction: Transaction) => void;
   onPageChange?: (page: number) => void;
+  sortOrder?: "asc" | "desc";
+  onSortChange?: (order: "asc" | "desc") => void;
   className?: string;
 }
 
@@ -99,8 +102,50 @@ export function TransactionList({
   isLoading = false,
   onCategoryClick,
   onPageChange,
+  sortOrder = "desc",
+  onSortChange,
   className = "",
 }: TransactionListProps) {
+  const [descriptionWidth, setDescriptionWidth] = useState(300);
+  const isResizing = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
+
+  const handleSortClick = () => {
+    if (onSortChange) {
+      onSortChange(sortOrder === "desc" ? "asc" : "desc");
+    }
+  };
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      isResizing.current = true;
+      startX.current = e.clientX;
+      startWidth.current = descriptionWidth;
+
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isResizing.current) return;
+        const diff = e.clientX - startX.current;
+        const newWidth = Math.max(
+          100,
+          Math.min(600, startWidth.current + diff),
+        );
+        setDescriptionWidth(newWidth);
+      };
+
+      const handleMouseUp = () => {
+        isResizing.current = false;
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    },
+    [descriptionWidth],
+  );
+
   if (isLoading) {
     return (
       <div className={className}>
@@ -118,14 +163,38 @@ export function TransactionList({
   }
 
   return (
-    <div className={className}>
+    <div className={`${className} overflow-x-auto`}>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Fecha</TableHead>
-            <TableHead>Descripción</TableHead>
-            <TableHead className="w-[140px]">Categoría</TableHead>
-            <TableHead className="text-right w-[120px]">Monto</TableHead>
+            <TableHead
+              className="whitespace-nowrap cursor-pointer select-none hover:bg-gray-100"
+              onClick={handleSortClick}
+            >
+              <div className="flex items-center gap-1">
+                Fecha
+                {sortOrder === "desc" ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : (
+                  <ArrowDown className="h-4 w-4" />
+                )}
+              </div>
+            </TableHead>
+            <TableHead
+              style={{ width: descriptionWidth, minWidth: 100, maxWidth: 600 }}
+              className="relative"
+            >
+              Descripción
+              <div
+                className="absolute right-0 top-0 h-full w-2 cursor-col-resize hover:bg-primary/50 active:bg-primary"
+                onMouseDown={handleMouseDown}
+              />
+            </TableHead>
+            <TableHead className="whitespace-nowrap">Banco</TableHead>
+            <TableHead className="whitespace-nowrap">Categoría</TableHead>
+            <TableHead className="text-right whitespace-nowrap">
+              Monto
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

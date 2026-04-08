@@ -29,24 +29,6 @@ services:
       timeout: 5s
       retries: 5
 
-  minio:
-    image: minio/minio:latest
-    container_name: gastico-minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: gastico
-      MINIO_ROOT_PASSWORD: gastico_dev
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: .
@@ -56,10 +38,6 @@ services:
     environment:
       DATABASE_URL: postgres://gastico:gastico_dev@db:5432/gastico
       REDIS_URL: redis://redis:6379
-      S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: gastico
-      S3_SECRET_KEY: gastico_dev
-      S3_BUCKET: gastico-statements
       RUST_LOG: debug
       JWT_SECRET: dev_jwt_secret_change_in_production
     ports:
@@ -68,8 +46,6 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      minio:
         condition: service_healthy
     volumes:
       - ./backend:/app
@@ -86,17 +62,11 @@ services:
     environment:
       DATABASE_URL: postgres://gastico:gastico_dev@db:5432/gastico
       REDIS_URL: redis://redis:6379
-      S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: gastico
-      S3_SECRET_KEY: gastico_dev
-      S3_BUCKET: gastico-statements
       RUST_LOG: debug
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      minio:
         condition: service_healthy
     volumes:
       - ./backend:/app
@@ -123,6 +93,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  minio_data:
   cargo_cache:
   target_cache:

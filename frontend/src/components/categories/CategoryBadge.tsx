@@ -15,6 +15,9 @@ import {
   Laptop,
   Repeat,
   CircleDot,
+  Wallet,
+  Zap,
+  ArrowRightLeft,
   type LucideIcon,
 } from "lucide-react";
 import type { Category } from "@/types";
@@ -40,6 +43,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   laptop: Laptop,
   repeat: Repeat,
   "circle-dot": CircleDot,
+  wallet: Wallet,
+  zap: Zap,
+  "arrow-right-left": ArrowRightLeft,
 };
 
 const SIZE_CLASSES = {

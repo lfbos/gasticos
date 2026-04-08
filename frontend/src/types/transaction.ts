@@ -21,6 +21,7 @@ export interface Transaction {
   category_color: string | null;
   category_icon: string | null;
   is_user_categorized: boolean;
+  bank: string | null;
   created_at: string;
 }
 
@@ -38,12 +39,20 @@ export interface PaginatedTransactionsResponse {
 export interface ListTransactionsParams {
   page?: number;
   per_page?: number;
-  category_id?: string;
+  category_ids?: string[];
   date_from?: string;
   date_to?: string;
   is_income?: boolean;
   search?: string;
-  uncategorized?: boolean;
+  sort_order?: "asc" | "desc";
+  bank?: string;
+}
+
+/**
+ * Response with list of banks.
+ */
+export interface BanksResponse {
+  banks: string[];
 }
 
 /**
@@ -66,9 +75,14 @@ export function formatTransactionAmount(amount: number): string {
 
 /**
  * Format a transaction date for display.
+ * Parses YYYY-MM-DD without timezone conversion issues.
  */
 export function formatTransactionDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  // Parse date components to avoid timezone issues
+  // Input format: "2025-10-01" (YYYY-MM-DD)
+  const [year, month, day] = dateStr.split("-").map(Number);
+  // Create date at noon local time to avoid timezone shifts
+  const date = new Date(year, month - 1, day, 12, 0, 0);
   return new Intl.DateTimeFormat("es-CO", {
     day: "2-digit",
     month: "short",

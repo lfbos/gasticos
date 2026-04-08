@@ -152,10 +152,7 @@ async fn process_belvo_sync_queue_job(
                                 .rpush::<_, _, ()>(CATEGORIZE_QUEUE, payload_json)
                                 .await
                             {
-                                error!(
-                                    "Failed to queue categorization job after sync: {}",
-                                    e
-                                );
+                                error!("Failed to queue categorization job after sync: {}", e);
                             } else {
                                 info!(
                                     "Queued categorization job for user {} after Belvo sync",

@@ -6,6 +6,7 @@ members = [
     "crates/categorizer",
     "crates/shared",
     "crates/belvo",
+    "crates/parser",
 ]
 
 [workspace.package]

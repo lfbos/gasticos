@@ -40,6 +40,63 @@ impl CategorizationRule {
 pub static CATEGORIZATION_RULES: Lazy<Vec<CategorizationRule>> = Lazy::new(|| {
     vec![
         // ====================================================================
+        // INCOME PATTERNS (High priority)
+        // ====================================================================
+        CategorizationRule::new(
+            "salary",
+            r"(?i)(N[OÓ]MINA|SALARIO|SUELDO|PAGO\s+EMPRESA)",
+            SystemCategory::Income,
+            100,
+        )
+        .unwrap(),
+        CategorizationRule::new(
+            "interbank_payment",
+            r"(?i)(PAGO\s+INTERBANC|ABONO\s+INTERBANC)",
+            SystemCategory::Income,
+            95,
+        )
+        .unwrap(),
+        CategorizationRule::new(
+            "transfer_in",
+            r"(?i)(TRANSFERENCIA\s+DESDE|ABONO\s+DESDE|RECIBIDO\s+DE)",
+            SystemCategory::Income,
+            95,
+        )
+        .unwrap(),
+        CategorizationRule::new(
+            "deposit",
+            r"(?i)(CONSIGNACI[OÓ]N|ABONO\s+EN\s+EFECTIVO|DEP[OÓ]SITO)",
+            SystemCategory::Income,
+            90,
+        )
+        .unwrap(),
+        CategorizationRule::new(
+            "refund",
+            r"(?i)(DEVOLUCI[OÓ]N|REEMBOLSO|REVERSO|ANULACI[OÓ]N)",
+            SystemCategory::Income,
+            90,
+        )
+        .unwrap(),
+        CategorizationRule::new(
+            "freelance_payment",
+            r"(?i)(PAGO\s+POR\s+SERVICIOS|HONORARIOS|FREELANCE|PAYPAL|PAYONEER|WISE|DLOCAL)",
+            SystemCategory::Income,
+            90,
+        )
+        .unwrap(),
+
+        // ====================================================================
+        // TRANSFERS (Person-to-person)
+        // ====================================================================
+        CategorizationRule::new(
+            "person_transfer",
+            r"(?i)(ENVIASTE\s+A|TRANSFERENCIA\s+A|PAGO\s+A\s+[A-Z]+|^PARA\s+[A-Z])",
+            SystemCategory::Transfers,
+            95,
+        )
+        .unwrap(),
+
+        // ====================================================================
         // FINANCIAL PATTERNS (High priority - specific patterns)
         // ====================================================================
         CategorizationRule::new(
@@ -161,14 +218,14 @@ pub static CATEGORIZATION_RULES: Lazy<Vec<CategorizationRule>> = Lazy::new(|| {
         // ====================================================================
         CategorizationRule::new(
             "supermarket",
-            r"(?i)(EXITO|CARULLA|JUMBO|OLIMPICA|SAO|SURTIMAX|MAKRO|PRICESMART|ALKOSTO|ARA|CENCOSUD)",
+            r"(?i)(EXITO|CARULLA|JUMBO|OLIMPICA|SURTIMAX|MAKRO|PRICESMART|ALKOSTO|CENCOSUD|\bARA\b|\bSAO\b)",
             SystemCategory::Groceries,
             90,
         )
         .unwrap(),
         CategorizationRule::new(
             "discount_store",
-            r"(?i)(D1|TIENDAS\s+D1|JUSTO\s*[Y&]\s*BUENO|[IÍ]SIMO|EURO\s+SUPERMERCADO|CORATIENDAS)",
+            r"(?i)(TIENDAS\s+D1|JUSTO\s*[Y&]\s*BUENO|[IÍ]SIMO|EURO\s+SUPERMERCADO|CORATIENDAS|\bD1\b)",
             SystemCategory::Groceries,
             90,
         )
@@ -232,15 +289,33 @@ pub static CATEGORIZATION_RULES: Lazy<Vec<CategorizationRule>> = Lazy::new(|| {
         .unwrap(),
 
         // ====================================================================
-        // HOUSING
+        // SERVICES (Utilities - Luz, Gas, Agua, Internet, etc.)
         // ====================================================================
         CategorizationRule::new(
             "utilities",
-            r"(?i)(EPM|CODENSA|ENEL|VANTI|GAS\s+NATURAL|ACUEDUCTO|SERVICIOS\s+P[UÚ]BLICOS|ENERG[IÍ]A|AGUA)",
-            SystemCategory::Housing,
+            r"(?i)(EPM|CODENSA|ENEL|VANTI|GAS\s+NATURAL|GASES\s+DE\s+OCCIDENTE|ACUEDUCTO|SERVICIOS\s+P[UÚ]BLICOS|ENERG[IÍ]A|AGUA|EMCALI|CONSORCIO\s+EMCALI|ELECTRICARIBE|AFINIA|AIR-E|ESSA|ELECTROHUILA)",
+            SystemCategory::Services,
+            95,
+        )
+        .unwrap(),
+        CategorizationRule::new(
+            "internet_tv",
+            r"(?i)(CLARO\s+HOGAR|MOVISTAR\s+HOGAR|TIGO\s+UNE|ETB\s+HOGAR|DIRECTV|DISH|CABLE)",
+            SystemCategory::Services,
             90,
         )
         .unwrap(),
+        CategorizationRule::new(
+            "water_sewage",
+            r"(?i)(ACUEDUCTO|AAA|TRIPLE\s+A|AGUAS\s+DE|EAAB|ALCANTARILLADO)",
+            SystemCategory::Services,
+            90,
+        )
+        .unwrap(),
+
+        // ====================================================================
+        // HOUSING
+        // ====================================================================
         CategorizationRule::new(
             "rent_admin",
             r"(?i)(ARRIENDO|ADMINISTRACI[OÓ]N|CONJUNTO|PROPIEDAD\s+HORIZONTAL)",
@@ -350,7 +425,7 @@ pub static CATEGORIZATION_RULES: Lazy<Vec<CategorizationRule>> = Lazy::new(|| {
         .unwrap(),
         CategorizationRule::new(
             "mobile_carrier",
-            r"(?i)(CLARO|MOVISTAR|TIGO|WOM|VIRGIN|ETB|RECARGA)",
+            r"(?i)(CLARO|MOVISTAR|TIGO|\bWOM\b|VIRGIN|ETB|RECARGA)",
             SystemCategory::Technology,
             80,
         )
@@ -448,8 +523,44 @@ mod tests {
     }
 
     #[test]
+    fn test_match_income_rules() {
+        let (cat, _, _) = match_rules("PAGO INTERBANC DLOCAL COLOMBIA").unwrap();
+        assert_eq!(cat, SystemCategory::Income);
+
+        let (cat, _, _) = match_rules("TRANSFERENCIA DESDE NEQUI").unwrap();
+        assert_eq!(cat, SystemCategory::Income);
+
+        let (cat, _, _) = match_rules("NOMINA EMPRESA XYZ").unwrap();
+        assert_eq!(cat, SystemCategory::Income);
+
+        let (cat, _, _) = match_rules("CONSIGNACION NACIONAL").unwrap();
+        assert_eq!(cat, SystemCategory::Income);
+
+        let (cat, _, _) = match_rules("DEVOLUCION COMPRA").unwrap();
+        assert_eq!(cat, SystemCategory::Income);
+    }
+
+    #[test]
     fn test_no_match() {
         assert!(match_rules("RANDOM TRANSACTION XYZ").is_none());
+    }
+
+    #[test]
+    fn test_short_patterns_require_word_boundaries() {
+        // "PARA ELSY LLANOS BOLANOS" should match Transfers rule (person_transfer)
+        let (cat, _, _) = match_rules("PARA ELSY LLANOS BOLANOS").unwrap();
+        assert_eq!(cat, SystemCategory::Transfers);
+
+        // "PAGO PARA" should NOT match ARA grocery rule
+        assert!(match_rules("PAGO PARA JUAN PEREZ").is_none());
+
+        // But "ARA" as standalone should match Groceries
+        let (cat, _, _) = match_rules("TIENDAS ARA BOGOTA").unwrap();
+        assert_eq!(cat, SystemCategory::Groceries);
+
+        // D1 should work as standalone
+        let (cat, _, _) = match_rules("COMPRA D1 CALLE 80").unwrap();
+        assert_eq!(cat, SystemCategory::Groceries);
     }
 
     #[test]

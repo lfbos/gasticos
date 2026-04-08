@@ -2,16 +2,56 @@
  * TransactionFilters component for filtering transactions.
  */
 
-import { useState, useEffect } from "react";
-import { Search, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Search,
+  X,
+  ChevronDown,
+  Check,
+  Home,
+  ShoppingCart,
+  Utensils,
+  Car,
+  HeartPulse,
+  GraduationCap,
+  Gamepad,
+  Shirt,
+  Landmark,
+  Laptop,
+  Repeat,
+  CircleDot,
+  Wallet,
+  Zap,
+  ArrowRightLeft,
+  type LucideIcon,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { Category, ListTransactionsParams } from "@/types";
-import { getCategoryDisplayName } from "@/types/category";
+import { getCategoryDisplayName, getCategoryColor } from "@/types/category";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  home: Home,
+  "shopping-cart": ShoppingCart,
+  utensils: Utensils,
+  car: Car,
+  "heart-pulse": HeartPulse,
+  "graduation-cap": GraduationCap,
+  gamepad: Gamepad,
+  shirt: Shirt,
+  landmark: Landmark,
+  laptop: Laptop,
+  repeat: Repeat,
+  "circle-dot": CircleDot,
+  wallet: Wallet,
+  zap: Zap,
+  "arrow-right-left": ArrowRightLeft,
+};
 
 interface TransactionFiltersProps {
   categories: Category[];
+  banks: string[];
   filters: ListTransactionsParams;
   onFiltersChange: (filters: ListTransactionsParams) => void;
   className?: string;
@@ -19,6 +59,7 @@ interface TransactionFiltersProps {
 
 export function TransactionFilters({
   categories,
+  banks,
   filters,
   onFiltersChange,
   className = "",
@@ -27,6 +68,22 @@ export function TransactionFilters({
   const [search, setSearch] = useState(filters.search ?? "");
   const [dateFrom, setDateFrom] = useState(filters.date_from ?? "");
   const [dateTo, setDateTo] = useState(filters.date_to ?? "");
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target as Node)
+      ) {
+        setCategoryDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -38,11 +95,24 @@ export function TransactionFilters({
     return () => clearTimeout(timer);
   }, [search, filters, onFiltersChange]);
 
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const selectedCategoryIds = filters.category_ids ?? [];
+
+  const handleCategoryToggle = (categoryId: string) => {
+    const newIds = selectedCategoryIds.includes(categoryId)
+      ? selectedCategoryIds.filter((id) => id !== categoryId)
+      : [...selectedCategoryIds, categoryId];
+
+    onFiltersChange({
+      ...filters,
+      category_ids: newIds.length > 0 ? newIds : undefined,
+    });
+  };
+
+  const handleBankChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     onFiltersChange({
       ...filters,
-      category_id: value || undefined,
+      bank: value || undefined,
     });
   };
 
@@ -72,15 +142,6 @@ export function TransactionFilters({
     });
   };
 
-  const handleUncategorizedChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    onFiltersChange({
-      ...filters,
-      uncategorized: e.target.checked || undefined,
-    });
-  };
-
   const clearFilters = () => {
     setSearch("");
     setDateFrom("");
@@ -93,11 +154,22 @@ export function TransactionFilters({
 
   const hasActiveFilters =
     filters.search ||
-    filters.category_id ||
+    (filters.category_ids && filters.category_ids.length > 0) ||
     filters.date_from ||
     filters.date_to ||
     filters.is_income !== undefined ||
-    filters.uncategorized;
+    filters.bank;
+
+  const getCategoryButtonLabel = () => {
+    if (selectedCategoryIds.length === 0) {
+      return "Todas las categorías";
+    }
+    if (selectedCategoryIds.length === 1) {
+      const cat = categories.find((c) => c.id === selectedCategoryIds[0]);
+      return cat ? getCategoryDisplayName(cat) : "1 categoría";
+    }
+    return `${selectedCategoryIds.length} categorías`;
+  };
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -132,22 +204,66 @@ export function TransactionFilters({
           <option value="expense">Gastos</option>
         </select>
 
-        {/* Category filter */}
-        <select
-          value={filters.category_id ?? ""}
-          onChange={handleCategoryChange}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">Todas las categorías</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {getCategoryDisplayName(cat)}
-            </option>
-          ))}
-        </select>
+        {/* Category multi-select */}
+        <div className="relative" ref={categoryDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+            className="h-9 min-w-[180px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring flex items-center justify-between gap-2"
+          >
+            <span className="truncate">{getCategoryButtonLabel()}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+          </button>
+          {categoryDropdownOpen && (
+            <div className="absolute top-full left-0 mt-1 w-64 max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg z-50">
+              {categories.map((cat) => {
+                const isSelected = selectedCategoryIds.includes(cat.id);
+                const IconComponent =
+                  ICON_MAP[cat.icon || "circle-dot"] || CircleDot;
+                const color = getCategoryColor(cat);
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleCategoryToggle(cat.id)}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <div
+                      className={`w-4 h-4 border rounded flex items-center justify-center ${
+                        isSelected
+                          ? "bg-primary border-primary"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      {isSelected && <Check className="h-3 w-3 text-white" />}
+                    </div>
+                    <IconComponent size={16} style={{ color }} />
+                    <span>{getCategoryDisplayName(cat)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Bank filter */}
+        {banks.length > 0 && (
+          <select
+            value={filters.bank ?? ""}
+            onChange={handleBankChange}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">Todos los bancos</option>
+            {banks.map((bank) => (
+              <option key={bank} value={bank}>
+                {bank}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {/* Date range and uncategorized row */}
+      {/* Date range row */}
       <div className="flex flex-col sm:flex-row gap-3 items-end">
         {/* Date from */}
         <div className="flex-1 space-y-1">
@@ -174,17 +290,6 @@ export function TransactionFilters({
             onChange={handleDateToChange}
           />
         </div>
-
-        {/* Uncategorized checkbox */}
-        <label className="flex items-center gap-2 h-9 px-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={filters.uncategorized ?? false}
-            onChange={handleUncategorizedChange}
-            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-          />
-          <span className="text-sm whitespace-nowrap">Sin categoría</span>
-        </label>
 
         {/* Clear filters */}
         {hasActiveFilters && (

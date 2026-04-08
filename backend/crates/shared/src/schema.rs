@@ -149,6 +149,7 @@ diesel::table! {
         created_at -> Timestamptz,
         belvo_transaction_id -> Nullable<Uuid>,
         belvo_account_id -> Nullable<Uuid>,
+        sequence -> Int4,
     }
 }
 
@@ -169,6 +170,7 @@ diesel::table! {
         created_at -> Timestamptz,
         belvo_transaction_id -> Nullable<Uuid>,
         belvo_account_id -> Nullable<Uuid>,
+        sequence -> Int4,
     }
 }
 
@@ -189,6 +191,7 @@ diesel::table! {
         created_at -> Timestamptz,
         belvo_transaction_id -> Nullable<Uuid>,
         belvo_account_id -> Nullable<Uuid>,
+        sequence -> Int4,
     }
 }
 
@@ -209,6 +212,7 @@ diesel::table! {
         created_at -> Timestamptz,
         belvo_transaction_id -> Nullable<Uuid>,
         belvo_account_id -> Nullable<Uuid>,
+        sequence -> Int4,
     }
 }
 
@@ -229,6 +233,7 @@ diesel::table! {
         created_at -> Timestamptz,
         belvo_transaction_id -> Nullable<Uuid>,
         belvo_account_id -> Nullable<Uuid>,
+        sequence -> Int4,
     }
 }
 
@@ -249,6 +254,7 @@ diesel::table! {
         created_at -> Timestamptz,
         belvo_transaction_id -> Nullable<Uuid>,
         belvo_account_id -> Nullable<Uuid>,
+        sequence -> Int4,
     }
 }
 
