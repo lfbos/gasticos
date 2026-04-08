@@ -58,18 +58,27 @@ async fn run_consumer_loop(
     redis_client: redis::Client,
     belvo_client: BelvoClient,
 ) -> anyhow::Result<()> {
+    info!("Getting Redis async connection...");
     let mut redis_conn = redis_client.get_multiplexed_async_connection().await?;
+    info!("Redis async connection established");
 
     // List of queues to monitor
     let queues = vec![BELVO_SYNC_QUEUE, CATEGORIZE_QUEUE];
+    info!("Monitoring queues: {:?}", queues);
 
     loop {
         // Use BLPOP for blocking pop with timeout on multiple queues
         // This will wait up to 5 seconds for a job from any queue
+        info!("Calling BLPOP on queues...");
         let result: Option<(String, String)> = redis_conn
             .blpop(&queues, 5.0)
             .await
             .map_err(|e| anyhow::anyhow!("Redis error: {}", e))?;
+
+        match &result {
+            Some((queue, _)) => info!("BLPOP returned job from queue: {}", queue),
+            None => info!("BLPOP timeout, no jobs available"),
+        }
 
         if let Some((queue, job_data)) = result {
             info!("Received job from queue: {}", queue);
@@ -90,7 +99,13 @@ async fn run_consumer_loop(
             // Route to appropriate handler based on queue
             match queue.as_str() {
                 q if q == BELVO_SYNC_QUEUE => {
-                    process_belvo_sync_queue_job(&job_data, &mut conn, &belvo_client).await;
+                    process_belvo_sync_queue_job(
+                        &job_data,
+                        &mut conn,
+                        &belvo_client,
+                        &mut redis_conn,
+                    )
+                    .await;
                 }
                 q if q == CATEGORIZE_QUEUE => {
                     process_categorize_queue_job(&job_data, &mut conn).await;
@@ -108,9 +123,11 @@ async fn process_belvo_sync_queue_job(
     job_data: &str,
     conn: &mut diesel_async::AsyncPgConnection,
     belvo_client: &BelvoClient,
+    redis_conn: &mut redis::aio::MultiplexedConnection,
 ) {
     match serde_json::from_str::<BelvoSyncJobPayload>(job_data) {
         Ok(payload) => {
+            let user_id = payload.user_id;
             let job_future = process_belvo_sync_job(payload.clone(), conn, belvo_client);
 
             match tokio::time::timeout(std::time::Duration::from_secs(JOB_TIMEOUT), job_future)
@@ -121,6 +138,35 @@ async fn process_belvo_sync_queue_job(
                         "Successfully processed Belvo sync job for link {}",
                         payload.link_id
                     );
+
+                    // Queue categorization job for the synced transactions
+                    let categorize_payload = CategorizeJobPayload {
+                        user_id,
+                        transaction_ids: vec![], // Categorize all uncategorized
+                        batch_size: 500,
+                    };
+
+                    match serde_json::to_string(&categorize_payload) {
+                        Ok(payload_json) => {
+                            if let Err(e) = redis_conn
+                                .rpush::<_, _, ()>(CATEGORIZE_QUEUE, payload_json)
+                                .await
+                            {
+                                error!(
+                                    "Failed to queue categorization job after sync: {}",
+                                    e
+                                );
+                            } else {
+                                info!(
+                                    "Queued categorization job for user {} after Belvo sync",
+                                    user_id
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to serialize categorization payload: {}", e);
+                        }
+                    }
                 }
                 Ok(Err(e)) => {
                     error!(
