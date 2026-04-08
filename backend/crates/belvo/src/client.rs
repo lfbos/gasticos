@@ -158,7 +158,13 @@ impl BelvoClient {
         body: &B,
     ) -> Result<T> {
         let url = format!("{}{}", self.base_url, path);
-        debug!("POST {}", url);
+
+        // Log request details for debugging
+        if let Ok(body_json) = serde_json::to_string(body) {
+            debug!("POST {} with body: {}", url, body_json);
+        } else {
+            debug!("POST {}", url);
+        }
 
         let response = self
             .http
@@ -261,12 +267,27 @@ impl BelvoClient {
             return BelvoError::Authentication("Invalid credentials".to_string());
         }
 
-        // Try to parse error body
-        match response.json::<BelvoApiError>().await {
+        // Get the response body for detailed logging
+        let body = match response.text().await {
+            Ok(text) => {
+                error!("Belvo API error response (status {}): {}", status, text);
+                text
+            }
+            Err(e) => {
+                error!("Failed to read error response body: {}", e);
+                return BelvoError::Api {
+                    code: status.as_str().to_string(),
+                    message: format!("HTTP error: {} (failed to read body)", status),
+                };
+            }
+        };
+
+        // Try to parse error body as JSON
+        match serde_json::from_str::<BelvoApiError>(&body) {
             Ok(api_error) => api_error.into(),
             Err(_) => BelvoError::Api {
                 code: status.as_str().to_string(),
-                message: format!("HTTP error: {}", status),
+                message: format!("HTTP error: {} - {}", status, body),
             },
         }
     }
