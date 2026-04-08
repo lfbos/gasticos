@@ -134,7 +134,7 @@ pub static MERCHANT_DICTIONARY: Lazy<HashMap<&'static str, SystemCategory>> = La
     map.insert("ESSO", SystemCategory::Transportation);
     map.insert("GASOLINA", SystemCategory::Transportation);
     map.insert("COMBUSTIBLE", SystemCategory::Transportation);
-    map.insert("EDS", SystemCategory::Transportation);
+    // EDS removed - too generic, use rules with context instead
     map.insert("ESTACION DE SERVICIO", SystemCategory::Transportation);
 
     // Tolls
@@ -353,12 +353,30 @@ pub static MERCHANT_DICTIONARY: Lazy<HashMap<&'static str, SystemCategory>> = La
     map.insert("WOM", SystemCategory::Technology);
     map.insert("VIRGIN", SystemCategory::Technology);
     map.insert("ETB MOVIL", SystemCategory::Technology);
-    map.insert("RECARGA", SystemCategory::Technology);
+    map.insert("RECARGA CELULAR", SystemCategory::Technology);
+    map.insert("RECARGA MOVIL", SystemCategory::Technology);
     map.insert("CELULAR", SystemCategory::Technology);
+
+    // ========================================================================
+    // TRANSFERS (Transferencias)
+    // ========================================================================
+    // Person-to-person transfers
+    map.insert("ENVIASTE A", SystemCategory::Transfers);
+    map.insert("TRANSFERENCIA A", SystemCategory::Transfers);
 
     // ========================================================================
     // FINANCIAL (Financiero)
     // ========================================================================
+    // Payment platforms
+    map.insert("MERCADO PAGO", SystemCategory::Financial);
+    map.insert("MERCADOPAGO", SystemCategory::Financial);
+    map.insert("MERCADO PA", SystemCategory::Financial); // Truncated version
+    map.insert("MP *", SystemCategory::Financial); // Mercado Pago prefix
+    map.insert("PAYPAL", SystemCategory::Financial);
+    map.insert("PAYONEER", SystemCategory::Financial);
+    map.insert("WISE", SystemCategory::Financial);
+    map.insert("WESTERN UNION", SystemCategory::Financial);
+
     // Banks
     map.insert("BANCOLOMBIA", SystemCategory::Financial);
     map.insert("DAVIVIENDA", SystemCategory::Financial);
@@ -398,13 +416,30 @@ pub static MERCHANT_DICTIONARY: Lazy<HashMap<&'static str, SystemCategory>> = La
     map.insert("CREDITO", SystemCategory::Financial);
     map.insert("PAGO TARJETA", SystemCategory::Financial);
     map.insert("TRANSFERENCIA", SystemCategory::Financial);
+    map.insert("RECARGA DESDE", SystemCategory::Financial);
     map.insert("RETIRO", SystemCategory::Financial);
     map.insert("CAJERO", SystemCategory::Financial);
     map.insert("ATM", SystemCategory::Financial);
-    map.insert("PSE", SystemCategory::Financial);
+    // PSE removed - too generic, let rules handle it with lower priority than utilities
+    // Payment platforms
+    map.insert("WOMPI", SystemCategory::Financial);
 
     map
 });
+
+/// Check if a pattern matches as a whole word in the text.
+/// For short patterns (< 4 chars), require word boundaries to avoid false positives.
+fn is_word_match(text: &str, pattern: &str) -> bool {
+    if pattern.len() >= 4 {
+        // Longer patterns can match anywhere
+        text.contains(pattern)
+    } else {
+        // Short patterns need word boundaries to avoid "ARA" matching in "PARA"
+        // Check if pattern appears as a standalone word
+        text.split(|c: char| !c.is_alphanumeric())
+            .any(|word| word == pattern)
+    }
+}
 
 /// Look up a category for a merchant name.
 /// Returns the category if found, None otherwise.
@@ -420,7 +455,7 @@ pub fn lookup_merchant(description: &str) -> Option<SystemCategory> {
     let mut best_match: Option<(&str, SystemCategory)> = None;
 
     for (pattern, &category) in MERCHANT_DICTIONARY.iter() {
-        if upper.contains(pattern) {
+        if is_word_match(&upper, pattern) {
             match best_match {
                 None => best_match = Some((pattern, category)),
                 Some((prev_pattern, _)) if pattern.len() > prev_pattern.len() => {
@@ -527,6 +562,23 @@ mod tests {
     }
 
     #[test]
+    fn test_mercado_pago_not_groceries() {
+        // MERCADO PAGO is a payment platform, not groceries
+        assert_eq!(
+            lookup_merchant("COMPRA EN MERCADO PAGO"),
+            Some(SystemCategory::Financial)
+        );
+        assert_eq!(
+            lookup_merchant("MERCADO PAGO"),
+            Some(SystemCategory::Financial)
+        );
+        assert_eq!(
+            lookup_merchant("MERCADO PA"),
+            Some(SystemCategory::Financial)
+        );
+    }
+
+    #[test]
     fn test_patterns_for_category() {
         let grocery_patterns = patterns_for_category(SystemCategory::Groceries);
         assert!(grocery_patterns.contains(&"D1"));
@@ -536,5 +588,50 @@ mod tests {
         let transport_patterns = patterns_for_category(SystemCategory::Transportation);
         assert!(transport_patterns.contains(&"UBER"));
         assert!(transport_patterns.contains(&"SITP"));
+    }
+
+    #[test]
+    fn test_short_patterns_require_word_boundaries() {
+        // "PARA ELSY" should NOT match "ARA" grocery (word boundary check)
+        // It will be matched by rules as Transfers instead
+        assert_eq!(lookup_merchant("PARA ELSY LLANOS BOLANOS"), None);
+
+        // "PAGO PARA" should NOT match ARA either
+        assert_eq!(lookup_merchant("PAGO PARA JUAN PEREZ"), None);
+
+        // But "ARA" as a standalone word should still match Groceries
+        assert_eq!(
+            lookup_merchant("TIENDAS ARA BOGOTA"),
+            Some(SystemCategory::Groceries)
+        );
+        assert_eq!(
+            lookup_merchant("COMPRA ARA 123"),
+            Some(SystemCategory::Groceries)
+        );
+
+        // D1 should work as standalone
+        assert_eq!(
+            lookup_merchant("TIENDAS D1"),
+            Some(SystemCategory::Groceries)
+        );
+
+        // Transfers should match by dictionary
+        assert_eq!(
+            lookup_merchant("ENVIASTE A JUAN PEREZ"),
+            Some(SystemCategory::Transfers)
+        );
+    }
+
+    #[test]
+    fn test_bank_transfers_are_financial() {
+        // Bank recharges/transfers should be Financial, not Technology
+        assert_eq!(
+            lookup_merchant("RECARGA DESDE BANCOLOMBIA"),
+            Some(SystemCategory::Financial)
+        );
+        assert_eq!(
+            lookup_merchant("RECARGA DESDE NEQUI"),
+            Some(SystemCategory::Financial)
+        );
     }
 }

@@ -1,0 +1,30 @@
+[package]
+name = "parser"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+# PDF parsing with password support
+pdf-extract = "0.7"
+lopdf = "0.34"
+
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "1"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+
+# Decimal for money
+rust_decimal = { version = "1", features = ["serde"] }
+
+# Regex for parsing
+regex = "1"
+
+# Logging
+tracing = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

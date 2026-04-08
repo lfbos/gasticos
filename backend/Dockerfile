@@ -25,11 +25,12 @@ FROM debian:bookworm-slim AS api
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies (including qpdf for PDF decryption)
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
     libpq5 \
+    qpdf \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/api /usr/local/bin/api
@@ -43,11 +44,12 @@ FROM debian:bookworm-slim AS worker
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies (including qpdf for PDF decryption)
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
     libpq5 \
+    qpdf \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/worker /usr/local/bin/worker
@@ -59,12 +61,13 @@ FROM rust:slim-bookworm AS dev
 
 WORKDIR /app
 
-# Install development dependencies
+# Install development dependencies (including qpdf for PDF decryption)
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
     libpq-dev \
     curl \
+    qpdf \
     && rm -rf /var/lib/apt/lists/*
 
 # Install cargo-watch for hot reloading

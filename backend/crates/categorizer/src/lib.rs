@@ -29,6 +29,8 @@ pub use rules::match_rules;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SystemCategory {
+    Income,
+    Services,
     Housing,
     Groceries,
     Restaurants,
@@ -40,6 +42,7 @@ pub enum SystemCategory {
     Financial,
     Technology,
     Subscriptions,
+    Transfers,
     Other,
 }
 
@@ -47,6 +50,8 @@ impl SystemCategory {
     /// Returns the lowercase English key for database storage and API responses.
     pub fn as_key(&self) -> &str {
         match self {
+            SystemCategory::Income => "income",
+            SystemCategory::Services => "services",
             SystemCategory::Housing => "housing",
             SystemCategory::Groceries => "groceries",
             SystemCategory::Restaurants => "restaurants",
@@ -58,6 +63,7 @@ impl SystemCategory {
             SystemCategory::Financial => "financial",
             SystemCategory::Technology => "technology",
             SystemCategory::Subscriptions => "subscriptions",
+            SystemCategory::Transfers => "transfers",
             SystemCategory::Other => "other",
         }
     }
@@ -65,6 +71,8 @@ impl SystemCategory {
     /// Returns all system categories.
     pub fn all() -> &'static [SystemCategory] {
         &[
+            SystemCategory::Income,
+            SystemCategory::Services,
             SystemCategory::Housing,
             SystemCategory::Groceries,
             SystemCategory::Restaurants,
@@ -76,6 +84,7 @@ impl SystemCategory {
             SystemCategory::Financial,
             SystemCategory::Technology,
             SystemCategory::Subscriptions,
+            SystemCategory::Transfers,
             SystemCategory::Other,
         ]
     }
@@ -83,6 +92,8 @@ impl SystemCategory {
     /// Parses a category from its key string.
     pub fn from_key(key: &str) -> Option<Self> {
         match key {
+            "income" => Some(SystemCategory::Income),
+            "services" => Some(SystemCategory::Services),
             "housing" => Some(SystemCategory::Housing),
             "groceries" => Some(SystemCategory::Groceries),
             "restaurants" => Some(SystemCategory::Restaurants),
@@ -94,6 +105,7 @@ impl SystemCategory {
             "financial" => Some(SystemCategory::Financial),
             "technology" => Some(SystemCategory::Technology),
             "subscriptions" => Some(SystemCategory::Subscriptions),
+            "transfers" => Some(SystemCategory::Transfers),
             "other" => Some(SystemCategory::Other),
             _ => None,
         }
@@ -263,7 +275,9 @@ mod tests {
     fn test_system_categories() {
         assert_eq!(SystemCategory::Groceries.as_key(), "groceries");
         assert_eq!(SystemCategory::Housing.as_key(), "housing");
-        assert_eq!(SystemCategory::all().len(), 12);
+        assert_eq!(SystemCategory::Income.as_key(), "income");
+        assert_eq!(SystemCategory::Services.as_key(), "services");
+        assert_eq!(SystemCategory::all().len(), 15);
     }
 
     #[test]
@@ -437,5 +451,37 @@ mod tests {
         let stats = categorizer.categorize_batch_with_stats(empty);
         assert_eq!(stats.total, 0);
         assert_eq!(stats.coverage_percent, 0.0);
+    }
+
+    #[test]
+    fn test_utility_payments_via_pse() {
+        let categorizer = Categorizer::new();
+
+        // PSE payments to utilities should be Services, not Financial
+        let result = categorizer.categorize_or_other("PAGO PSE CONSORCIO EMCALI");
+        assert_eq!(
+            result.category_name, "services",
+            "EMCALI should be services"
+        );
+
+        let result = categorizer.categorize_or_other("PAGO PSE GASES DE OCCIDENTE S");
+        assert_eq!(
+            result.category_name, "services",
+            "GASES DE OCCIDENTE should be services"
+        );
+
+        // Wompi is a payment platform -> Financial
+        let result = categorizer.categorize_or_other("TRANSF A Wompi SAS");
+        assert_eq!(
+            result.category_name, "financial",
+            "Wompi should be financial"
+        );
+
+        // GREEN EDS should NOT be categorized as Transportation (EDS was too generic)
+        let result = categorizer.categorize_or_other("COMPRA EN GREEN EDS");
+        assert_ne!(
+            result.category_name, "transportation",
+            "GREEN EDS should not be transportation"
+        );
     }
 }

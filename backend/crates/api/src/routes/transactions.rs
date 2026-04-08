@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use shared::{
     error::AppError,
     models::Transaction,
-    schema::{categories, transactions},
+    schema::{categories, statements, transactions},
     DbPool,
 };
 use uuid::Uuid;
@@ -45,6 +45,7 @@ pub struct TransactionResponse {
     pub category_color: Option<String>,
     pub category_icon: Option<String>,
     pub is_user_categorized: bool,
+    pub bank: Option<String>,
     pub created_at: String,
 }
 
@@ -55,6 +56,7 @@ impl TransactionResponse {
         category_key: Option<String>,
         category_color: Option<String>,
         category_icon: Option<String>,
+        bank: Option<String>,
     ) -> Self {
         Self {
             id: txn.id,
@@ -70,6 +72,7 @@ impl TransactionResponse {
             category_color,
             category_icon,
             is_user_categorized: txn.is_user_categorized,
+            bank,
             created_at: txn.created_at.to_rfc3339(),
         }
     }
@@ -102,8 +105,8 @@ pub struct ListTransactionsQuery {
     pub page: Option<i64>,
     /// Items per page (max 100)
     pub per_page: Option<i64>,
-    /// Filter by category ID
-    pub category_id: Option<Uuid>,
+    /// Filter by category IDs (comma-separated)
+    pub category_ids: Option<String>,
     /// Filter by start date (YYYY-MM-DD)
     pub date_from: Option<String>,
     /// Filter by end date (YYYY-MM-DD)
@@ -112,8 +115,10 @@ pub struct ListTransactionsQuery {
     pub is_income: Option<bool>,
     /// Search in description
     pub search: Option<String>,
-    /// Filter uncategorized only
-    pub uncategorized: Option<bool>,
+    /// Sort order: "asc" or "desc" (default: desc)
+    pub sort_order: Option<String>,
+    /// Filter by bank name (from statement)
+    pub bank: Option<String>,
 }
 
 /// Request to update a transaction's category.
@@ -141,57 +146,101 @@ pub async fn list_transactions(
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
     let offset = (page - 1) * per_page;
 
-    // Build base query
+    // Get statement IDs for bank filter (needed for both count and data queries)
+    let bank_statement_ids: Option<Vec<Uuid>> = if let Some(ref bank) = query.bank {
+        Some(
+            statements::table
+                .filter(statements::user_id.eq(auth_user.user_id))
+                .filter(statements::bank.eq(bank))
+                .select(statements::id)
+                .load(&mut conn)
+                .await
+                .map_err(|e| AppError::Database(e.to_string()))?,
+        )
+    } else {
+        None
+    };
+
+    // Build base query for data
     let mut base_query = transactions::table
         .filter(transactions::user_id.eq(auth_user.user_id))
         .into_boxed();
 
-    // Apply filters
-    if let Some(cat_id) = query.category_id {
-        base_query = base_query.filter(transactions::category_id.eq(cat_id));
+    // Build count query with same filters
+    let mut count_query = transactions::table
+        .filter(transactions::user_id.eq(auth_user.user_id))
+        .into_boxed();
+
+    // Apply filters to both queries
+    if let Some(ref cat_ids_str) = query.category_ids {
+        // Parse comma-separated UUIDs
+        let cat_ids: Vec<Uuid> = cat_ids_str
+            .split(',')
+            .filter_map(|s| Uuid::parse_str(s.trim()).ok())
+            .collect();
+        if !cat_ids.is_empty() {
+            base_query = base_query.filter(transactions::category_id.eq_any(cat_ids.clone()));
+            count_query = count_query.filter(transactions::category_id.eq_any(cat_ids));
+        }
     }
 
     if let Some(ref date_from) = query.date_from {
         if let Ok(date) = NaiveDate::parse_from_str(date_from, "%Y-%m-%d") {
             base_query = base_query.filter(transactions::date.ge(date));
+            count_query = count_query.filter(transactions::date.ge(date));
         }
     }
 
     if let Some(ref date_to) = query.date_to {
         if let Ok(date) = NaiveDate::parse_from_str(date_to, "%Y-%m-%d") {
             base_query = base_query.filter(transactions::date.le(date));
+            count_query = count_query.filter(transactions::date.le(date));
         }
     }
 
     if let Some(is_income) = query.is_income {
         base_query = base_query.filter(transactions::is_income.eq(is_income));
+        count_query = count_query.filter(transactions::is_income.eq(is_income));
     }
 
     if let Some(ref search) = query.search {
         let pattern = format!("%{}%", search.to_uppercase());
-        base_query = base_query.filter(transactions::description.ilike(pattern));
+        base_query = base_query.filter(transactions::description.ilike(pattern.clone()));
+        count_query = count_query.filter(transactions::description.ilike(pattern));
     }
 
-    if query.uncategorized == Some(true) {
-        base_query = base_query.filter(transactions::category_id.is_null());
+    // Apply bank filter
+    if let Some(ref stmt_ids) = bank_statement_ids {
+        base_query = base_query.filter(transactions::statement_id.eq_any(stmt_ids.clone()));
+        count_query = count_query.filter(transactions::statement_id.eq_any(stmt_ids.clone()));
     }
 
-    // Get total count for pagination
-    let total: i64 = transactions::table
-        .filter(transactions::user_id.eq(auth_user.user_id))
+    // Get total count for pagination (with filters applied)
+    let total: i64 = count_query
         .count()
         .get_result(&mut conn)
         .await
         .map_err(|e| AppError::Database(e.to_string()))?;
 
     // Get transactions with category info
-    let txns: Vec<Transaction> = base_query
-        .order(transactions::date.desc())
-        .offset(offset)
-        .limit(per_page)
-        .load(&mut conn)
-        .await
-        .map_err(|e| AppError::Database(e.to_string()))?;
+    let sort_asc = query.sort_order.as_deref() == Some("asc");
+    let txns: Vec<Transaction> = if sort_asc {
+        base_query
+            .order(transactions::date.asc())
+            .offset(offset)
+            .limit(per_page)
+            .load(&mut conn)
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?
+    } else {
+        base_query
+            .order(transactions::date.desc())
+            .offset(offset)
+            .limit(per_page)
+            .load(&mut conn)
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?
+    };
 
     // Get category info for each transaction
     let category_ids: Vec<Uuid> = txns.iter().filter_map(|t| t.category_id).collect();
@@ -206,6 +255,19 @@ pub async fn list_transactions(
         vec![]
     };
 
+    // Get statement info (bank names) for each transaction
+    let statement_ids: Vec<Uuid> = txns.iter().filter_map(|t| t.statement_id).collect();
+
+    let stmts: Vec<shared::models::Statement> = if !statement_ids.is_empty() {
+        statements::table
+            .filter(statements::id.eq_any(&statement_ids))
+            .load(&mut conn)
+            .await
+            .map_err(|e| AppError::Database(e.to_string()))?
+    } else {
+        vec![]
+    };
+
     // Build response
     let responses: Vec<TransactionResponse> = txns
         .into_iter()
@@ -213,12 +275,17 @@ pub async fn list_transactions(
             let cat = txn
                 .category_id
                 .and_then(|cid| cats.iter().find(|c| c.id == cid));
+            let bank = txn
+                .statement_id
+                .and_then(|sid| stmts.iter().find(|s| s.id == sid))
+                .map(|s| s.bank.clone());
             TransactionResponse::from_row(
                 txn,
                 cat.map(|c| c.name.clone()),
                 cat.and_then(|c| c.key.clone()),
                 cat.and_then(|c| c.color.clone()),
                 cat.and_then(|c| c.icon.clone()),
+                bank,
             )
         })
         .collect();
@@ -272,12 +339,26 @@ pub async fn get_transaction(
         None
     };
 
+    // Get bank info from statement if exists
+    let bank: Option<String> = if let Some(stmt_id) = txn.statement_id {
+        statements::table
+            .filter(statements::id.eq(stmt_id))
+            .select(statements::bank)
+            .first(&mut conn)
+            .await
+            .optional()
+            .map_err(|e| AppError::Database(e.to_string()))?
+    } else {
+        None
+    };
+
     let response = TransactionResponse::from_row(
         txn,
         cat.as_ref().map(|c| c.name.clone()),
         cat.as_ref().and_then(|c| c.key.clone()),
         cat.as_ref().and_then(|c| c.color.clone()),
         cat.as_ref().and_then(|c| c.icon.clone()),
+        bank,
     );
 
     Ok(HttpResponse::Ok().json(response))
@@ -362,20 +443,64 @@ pub async fn update_transaction_category(
         None
     };
 
+    // Get bank info from statement if exists
+    let bank: Option<String> = if let Some(stmt_id) = updated_txn.statement_id {
+        statements::table
+            .filter(statements::id.eq(stmt_id))
+            .select(statements::bank)
+            .first(&mut conn)
+            .await
+            .optional()
+            .map_err(|e| AppError::Database(e.to_string()))?
+    } else {
+        None
+    };
+
     let response = TransactionResponse::from_row(
         updated_txn,
         cat.as_ref().map(|c| c.name.clone()),
         cat.as_ref().and_then(|c| c.key.clone()),
         cat.as_ref().and_then(|c| c.color.clone()),
         cat.as_ref().and_then(|c| c.icon.clone()),
+        bank,
     );
 
     Ok(HttpResponse::Ok().json(response))
 }
 
+/// Response with list of banks.
+#[derive(Debug, Serialize)]
+pub struct BanksResponse {
+    pub banks: Vec<String>,
+}
+
+/// Get list of banks for the current user.
+///
+/// GET /api/v1/transactions/banks
+#[get("/transactions/banks")]
+pub async fn get_banks(
+    auth_user: AuthUser,
+    pool: web::Data<DbPool>,
+) -> Result<impl Responder, AppError> {
+    let mut conn = pool.get().await?;
+
+    // Get distinct bank names from user's statements
+    let banks: Vec<String> = statements::table
+        .filter(statements::user_id.eq(auth_user.user_id))
+        .select(statements::bank)
+        .distinct()
+        .order(statements::bank.asc())
+        .load(&mut conn)
+        .await
+        .map_err(|e| AppError::Database(e.to_string()))?;
+
+    Ok(HttpResponse::Ok().json(BanksResponse { banks }))
+}
+
 /// Configure transaction routes.
 pub fn transaction_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(list_transactions)
+    cfg.service(get_banks) // Must be before list_transactions to avoid route conflict
+        .service(list_transactions)
         .service(get_transaction)
         .service(update_transaction_category);
 }
@@ -391,12 +516,12 @@ mod tests {
 
         assert!(query.page.is_none());
         assert!(query.per_page.is_none());
-        assert!(query.category_id.is_none());
+        assert!(query.category_ids.is_none());
         assert!(query.date_from.is_none());
         assert!(query.date_to.is_none());
         assert!(query.is_income.is_none());
         assert!(query.search.is_none());
-        assert!(query.uncategorized.is_none());
+        assert!(query.bank.is_none());
     }
 
     #[test]
@@ -404,23 +529,41 @@ mod tests {
         let json = r#"{
             "page": 2,
             "per_page": 50,
-            "category_id": "550e8400-e29b-41d4-a716-446655440000",
+            "category_ids": "550e8400-e29b-41d4-a716-446655440000,660e8400-e29b-41d4-a716-446655440001",
             "date_from": "2024-01-01",
             "date_to": "2024-12-31",
             "is_income": false,
             "search": "mercado",
-            "uncategorized": true
+            "bank": "Bancolombia"
         }"#;
         let query: ListTransactionsQuery = serde_json::from_str(json).unwrap();
 
         assert_eq!(query.page, Some(2));
         assert_eq!(query.per_page, Some(50));
-        assert!(query.category_id.is_some());
+        assert_eq!(
+            query.category_ids,
+            Some(
+                "550e8400-e29b-41d4-a716-446655440000,660e8400-e29b-41d4-a716-446655440001"
+                    .to_string()
+            )
+        );
         assert_eq!(query.date_from, Some("2024-01-01".to_string()));
         assert_eq!(query.date_to, Some("2024-12-31".to_string()));
         assert_eq!(query.is_income, Some(false));
         assert_eq!(query.search, Some("mercado".to_string()));
-        assert_eq!(query.uncategorized, Some(true));
+        assert_eq!(query.bank, Some("Bancolombia".to_string()));
+    }
+
+    #[test]
+    fn test_banks_response_serialization() {
+        let response = BanksResponse {
+            banks: vec!["Bancolombia".to_string(), "Nequi".to_string()],
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("\"banks\""));
+        assert!(json.contains("Bancolombia"));
+        assert!(json.contains("Nequi"));
     }
 
     #[test]

@@ -114,7 +114,8 @@ async fn main() -> std::io::Result<()> {
                     .configure(routes::auth_routes)
                     .configure(routes::belvo_routes)
                     .configure(routes::category_routes)
-                    .configure(routes::transaction_routes),
+                    .configure(routes::transaction_routes)
+                    .configure(routes::upload_routes),
             )
     })
     .bind((host, port))?

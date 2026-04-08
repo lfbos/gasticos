@@ -328,6 +328,7 @@ async fn sync_transaction(
         is_income,
         belvo_transaction_id: Some(tx.id),
         belvo_account_id: account_id,
+        sequence: 0, // Belvo transactions have no sequence
     };
 
     diesel::insert_into(transactions::table)
