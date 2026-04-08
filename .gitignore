@@ -62,3 +62,6 @@ docs/
 .claude
 .claude_cache/
 CLAUDE.md
+
+# PDF statements
+statements/

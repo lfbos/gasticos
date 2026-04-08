@@ -279,4 +279,81 @@ mod tests {
         let err: AppError = diesel::result::Error::RollbackTransaction.into();
         assert!(matches!(err, AppError::Database(_)));
     }
+
+    #[test]
+    fn test_error_response_not_found() {
+        let err = AppError::NotFound("User".to_string());
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[test]
+    fn test_error_response_bad_request() {
+        let err = AppError::BadRequest("Invalid".to_string());
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn test_error_response_unauthorized() {
+        let err = AppError::Unauthorized;
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_error_response_forbidden() {
+        let err = AppError::Forbidden;
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[test]
+    fn test_error_response_database() {
+        let err = AppError::Database("Connection failed".to_string());
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_error_response_internal() {
+        let err = AppError::Internal("Error".to_string());
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_error_response_invalid_credentials() {
+        let err = AppError::InvalidCredentials;
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_error_response_token_expired() {
+        let err = AppError::TokenExpired;
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_error_response_token_invalid() {
+        let err = AppError::TokenInvalid;
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn test_error_response_email_exists() {
+        let err = AppError::EmailAlreadyExists;
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+    }
+
+    #[test]
+    fn test_error_response_password_weak() {
+        let err = AppError::PasswordTooWeak("Too short".to_string());
+        let response = err.error_response();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
 }

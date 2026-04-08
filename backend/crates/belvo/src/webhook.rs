@@ -86,4 +86,58 @@ mod tests {
         let result = verify_webhook_signature(secret, payload, wrong_signature);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_parse_webhook_payload_valid() {
+        use crate::models::WebhookEventType;
+
+        let payload = br#"{"webhook_code":"link_created","link_id":"550e8400-e29b-41d4-a716-446655440000","webhook_type":"LINK"}"#;
+
+        let result = parse_webhook_payload(payload);
+        assert!(result.is_ok());
+        let webhook = result.unwrap();
+        assert!(matches!(
+            webhook.webhook_code,
+            WebhookEventType::LinkCreated
+        ));
+    }
+
+    #[test]
+    fn test_parse_webhook_payload_invalid_json() {
+        let payload = b"not valid json";
+
+        let result = parse_webhook_payload(payload);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_verify_and_parse_webhook_success() {
+        use crate::models::WebhookEventType;
+
+        let secret = "test_secret";
+        let payload = br#"{"webhook_code":"link_created","link_id":"550e8400-e29b-41d4-a716-446655440000","webhook_type":"LINK"}"#;
+
+        // Generate signature
+        let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(payload);
+        let signature = hex::encode(mac.finalize().into_bytes());
+
+        let result = verify_and_parse_webhook(secret, payload, &signature);
+        assert!(result.is_ok());
+        let webhook = result.unwrap();
+        assert!(matches!(
+            webhook.webhook_code,
+            WebhookEventType::LinkCreated
+        ));
+    }
+
+    #[test]
+    fn test_verify_and_parse_webhook_bad_signature() {
+        let secret = "test_secret";
+        let payload = br#"{"webhook_code":"link_created","link_id":"550e8400-e29b-41d4-a716-446655440000","webhook_type":"LINK"}"#;
+        let wrong_signature = "bad_signature";
+
+        let result = verify_and_parse_webhook(secret, payload, wrong_signature);
+        assert!(result.is_err());
+    }
 }

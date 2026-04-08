@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 anyhow = "1.0.101"
 bigdecimal = "0.4"
+categorizer = { version = "0.1.0", path = "../categorizer" }
 chrono = "0.4"
 diesel = { version = "2.2", features = ["postgres"] }
 diesel-async = { version = "0.5", features = ["postgres", "deadpool"] }

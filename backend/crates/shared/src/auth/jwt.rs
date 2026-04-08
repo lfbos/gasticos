@@ -252,4 +252,114 @@ mod tests {
         assert_ne!(token1, token2);
         assert_eq!(token1.len(), 64); // 32 bytes * 2 (hex encoding)
     }
+
+    #[test]
+    fn test_hash_token() {
+        let token = "my_secret_token";
+        let hash1 = hash_token(token);
+        let hash2 = hash_token(token);
+
+        // Same token should produce same hash (deterministic)
+        assert_eq!(hash1, hash2);
+        // Hash should be SHA256 hex (64 characters)
+        assert_eq!(hash1.len(), 64);
+
+        // Different tokens should produce different hashes
+        let different_hash = hash_token("different_token");
+        assert_ne!(hash1, different_hash);
+    }
+
+    #[test]
+    fn test_claims_new_access() {
+        let config = test_config();
+        let user_id = Uuid::new_v4();
+        let claims = Claims::new_access(user_id, &config);
+
+        assert_eq!(claims.sub, user_id);
+        assert_eq!(claims.token_type, TokenType::Access);
+        assert!(claims.exp > claims.iat);
+        // Access token should expire in 1 hour (3600 seconds)
+        assert_eq!(claims.exp - claims.iat, 3600);
+    }
+
+    #[test]
+    fn test_claims_new_refresh() {
+        let config = test_config();
+        let user_id = Uuid::new_v4();
+        let claims = Claims::new_refresh(user_id, &config);
+
+        assert_eq!(claims.sub, user_id);
+        assert_eq!(claims.token_type, TokenType::Refresh);
+        assert!(claims.exp > claims.iat);
+        // Refresh token should expire in 7 days (7 * 24 * 3600 seconds)
+        assert_eq!(claims.exp - claims.iat, 7 * 24 * 3600);
+    }
+
+    #[test]
+    fn test_validate_token_directly() {
+        let config = test_config();
+        let user_id = Uuid::new_v4();
+
+        let token = generate_access_token(user_id, &config).expect("Failed to generate token");
+        let claims = validate_token(&token, &config).expect("Failed to validate token");
+
+        assert_eq!(claims.sub, user_id);
+    }
+
+    #[test]
+    fn test_token_type_serialization() {
+        let access = TokenType::Access;
+        let refresh = TokenType::Refresh;
+
+        let access_json = serde_json::to_string(&access).unwrap();
+        let refresh_json = serde_json::to_string(&refresh).unwrap();
+
+        assert_eq!(access_json, "\"access\"");
+        assert_eq!(refresh_json, "\"refresh\"");
+    }
+
+    // Combined into a single test to avoid race conditions with parallel test execution.
+    // Environment variables are global state, so tests that modify them must run sequentially.
+    #[test]
+    fn test_from_env_scenarios() {
+        // Scenario 1: All env vars set with custom values
+        std::env::set_var(
+            "JWT_SECRET",
+            "test_secret_that_is_at_least_32_characters_for_security",
+        );
+        std::env::set_var("JWT_ACCESS_EXPIRY_HOURS", "2");
+        std::env::set_var("JWT_REFRESH_EXPIRY_DAYS", "14");
+
+        let result = JwtConfig::from_env();
+        assert!(result.is_ok());
+        let config = result.unwrap();
+        assert_eq!(
+            config.secret,
+            "test_secret_that_is_at_least_32_characters_for_security"
+        );
+        assert_eq!(config.access_expiry_hours, 2);
+        assert_eq!(config.refresh_expiry_days, 14);
+
+        // Scenario 2: Only required env var set (uses defaults for expiry)
+        std::env::set_var(
+            "JWT_SECRET",
+            "another_secret_that_is_at_least_32_characters_long",
+        );
+        std::env::remove_var("JWT_ACCESS_EXPIRY_HOURS");
+        std::env::remove_var("JWT_REFRESH_EXPIRY_DAYS");
+
+        let result = JwtConfig::from_env();
+        assert!(result.is_ok());
+        let config = result.unwrap();
+        assert_eq!(config.access_expiry_hours, 1); // default
+        assert_eq!(config.refresh_expiry_days, 7); // default
+
+        // Scenario 3: Secret too short
+        std::env::set_var("JWT_SECRET", "short");
+        let result = JwtConfig::from_env();
+        assert!(result.is_err());
+
+        // Clean up
+        std::env::remove_var("JWT_SECRET");
+    }
 }
