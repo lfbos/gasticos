@@ -1,3 +1,4 @@
+export { useAnalytics } from "./useAnalytics";
 export { useAuth } from "./useAuth";
 export { useBanks } from "./useTransactions";
 export { useBelvo } from "./useBelvo";

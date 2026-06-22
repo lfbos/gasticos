@@ -1,11 +1,13 @@
 //! API route handlers.
 
+pub mod analytics;
 pub mod auth;
 pub mod belvo;
 pub mod categories;
 pub mod transactions;
 pub mod upload;
 
+pub use analytics::analytics_routes;
 pub use auth::auth_routes;
 pub use belvo::belvo_routes;
 pub use categories::category_routes;

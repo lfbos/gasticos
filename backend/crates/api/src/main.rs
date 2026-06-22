@@ -111,6 +111,7 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 web::scope("/api/v1")
+                    .configure(routes::analytics_routes)
                     .configure(routes::auth_routes)
                     .configure(routes::belvo_routes)
                     .configure(routes::category_routes)
